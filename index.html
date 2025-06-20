@@ -98,12 +98,7 @@
             <p class="text-gray-600 mb-4">La base de datos está bloqueando la aplicación. Por favor, asegúrate de haber actualizado las reglas de seguridad en tu panel de Firebase como se indicó.</p>
         </div>
     </div>
-    
-    <!-- Pantalla Pública de Carga/Error -->
-    <div id="public-loader" class="hidden min-h-screen flex-col items-center justify-center bg-gray-100 text-gray-800 p-4">
-        <i id="public-loader-icon" class="fas fa-spinner fa-spin fa-3x text-purple-500"></i>
-        <p id="public-loader-message" class="mt-4 text-lg">Cargando menú...</p>
-    </div>
+
 
     <!-- Pantalla de Autenticación (Login y Registro) -->
     <div id="auth-screen" class="min-h-screen flex-col items-center justify-center bg-gray-900 text-white p-4 hidden">
@@ -144,7 +139,7 @@
      <!-- Pantalla de Carga Inicial -->
     <div id="loading-screen" class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-4">
         <i class="fas fa-spinner fa-spin fa-3x text-purple-400"></i>
-        <p class="mt-4 text-lg">Iniciando sesión...</p>
+        <p class="mt-4 text-lg">Cargando...</p>
     </div>
 
 
@@ -156,14 +151,14 @@
                  <p id="welcome-message" class="text-sm text-gray-600"></p>
             </div>
             <div class="flex flex-wrap gap-2">
+                 <button id="publish-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                    <i class="fas fa-globe-americas mr-2"></i>Publicar
+                </button>
                  <button id="go-to-settings-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300">
                     <i class="fas fa-cog mr-2"></i>Configuración
                 </button>
                  <button id="view-public-menu-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
                     <i class="fas fa-eye mr-2"></i>Ver Menú
-                </button>
-                 <button id="publish-menu-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                    <i class="fas fa-globe mr-2"></i>Publicar
                 </button>
                 <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
                     <i class="fas fa-sign-out-alt mr-2"></i>Salir
@@ -252,13 +247,13 @@
     <!-- Panel de Configuración -->
     <div id="settings-panel" class="hidden">
          <header class="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-30">
-            <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-palette mr-2"></i>Configuración de Apariencia</h1>
+            <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-palette mr-2"></i>Configuración y Publicación</h1>
              <button id="back-to-admin-from-settings-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300 mr-2">
                 <i class="fas fa-arrow-left mr-2"></i>Volver al Panel
             </button>
         </header>
         <main class="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
-             <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+             <div class="bg-white p-6 rounded-xl shadow-lg">
                 <div class="space-y-6">
                     <div class="flex justify-between items-center">
                         <h3 class="text-lg font-medium text-gray-900">Logotipo y Título</h3>
@@ -281,13 +276,6 @@
                         <input type="text" id="menu-slogan-input-settings" placeholder="Ej: El mejor sabor de la ciudad" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
                     </div>
                      <div>
-                        <label for="user-id-display" class="block text-sm font-medium text-gray-700">Tu ID de Usuario (para compartir)</label>
-                        <div class="mt-1 flex">
-                            <input type="text" id="user-id-display" readonly class="block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-md shadow-sm">
-                            <button id="copy-user-id-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-r-md hover:bg-gray-300"><i class="fas fa-copy"></i></button>
-                        </div>
-                    </div>
-                    <div>
                         <label class="block text-sm font-medium text-gray-700">Tema del Menú</label>
                         <div id="theme-panel" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-2">
                             <!-- Los temas se generan con JS -->
@@ -295,6 +283,32 @@
                     </div>
                 </div>
             </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Publicar tu Menú</h3>
+                <p class="text-sm text-gray-500 mb-4">Crea una URL pública y única para tu menú. Elige un nombre corto para tu restaurante. Usa solo letras minúsculas, números y guiones.</p>
+                <div>
+                    <label for="public-path-input" class="block text-sm font-medium text-gray-700">URL Personalizada</label>
+                    <div class="mt-1 flex rounded-md shadow-sm">
+                        <span id="domain-display" class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm"></span>
+                        <input type="text" id="public-path-input" placeholder="nombre-de-tu-restaurante" class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md focus:ring-purple-500 focus:border-purple-500 sm:text-sm border-gray-300">
+                    </div>
+                    <p id="public-path-error" class="text-red-500 text-sm h-4 mt-1"></p>
+                </div>
+                <div class="mt-4">
+                    <button id="save-public-path-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                        Guardar y Generar URL
+                    </button>
+                </div>
+                <div id="public-url-display-container" class="mt-6 hidden">
+                    <label class="block text-sm font-medium text-gray-700">Tu URL Pública:</label>
+                    <div class="mt-1 flex">
+                        <input type="text" id="public-url-display" readonly class="block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-md shadow-sm">
+                        <button id="copy-public-url-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-r-md hover:bg-gray-300"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>
+
              <div class="bg-white p-6 rounded-xl shadow-lg">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Ordenar Categorías</h3>
                 <p class="text-sm text-gray-500 mb-4">Arrastra y suelta las categorías para cambiar su orden en el menú público.</p>
@@ -338,38 +352,24 @@
         </div>
     </div>
 
-    <!-- Modal de Publicación -->
-    <div id="publish-modal" class="hidden modal">
-        <div class="overlay"></div>
-        <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-lg z-[101]">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="publish-modal-title" class="text-lg font-bold">¡Tu Menú está en Línea!</h3>
-                <button id="publish-modal-close-btn" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
-            </div>
-            <p id="publish-modal-message" class="text-gray-600 mb-4">Comparte este enlace con tus clientes. Pueden verlo desde cualquier dispositivo.</p>
-            <div class="mt-1 flex">
-                <input type="text" id="public-url-display" readonly class="block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-md shadow-sm">
-                <button id="copy-public-url-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-r-md hover:bg-gray-300"><i class="fas fa-copy"></i></button>
-            </div>
-            <div class="mt-4 text-center">
-                <a id="visit-public-url-btn" href="#" target="_blank" class="text-purple-600 hover:text-purple-800 font-medium">
-                    Visitar mi menú <i class="fas fa-external-link-alt ml-1"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-
     <!-- Firebase SDK -->
     <script type="module">
         // Import necessary Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, getDoc, setDoc, deleteDoc, getDocs, writeBatch, query, where, orderBy, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, deleteDoc, getDoc, query, where, getDocs, writeBatch, orderBy, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
         // --- App and Firebase Configuration ---
-        // Use configuration provided by the environment for compatibility with custom tokens.
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-digital-menu';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyAKejVfnb0RxtFknbxTX8dcoMCEDdplpQc",
+            authDomain: "menujgm.firebaseapp.com",
+            projectId: "menujgm",
+            storageBucket: "menujgm.appspot.com",
+            messagingSenderId: "213391992387",
+            appId: "1:213391992387:web:ef198b8286bb09ee94d6f6",
+            measurementId: "G-48B92ZHLXR"
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'menujgm';
 
         // Initialize Firebase services
         const app = initializeApp(firebaseConfig);
@@ -381,12 +381,11 @@
         let userId;
         let menuItemsCollection, categoriesCollection, settingsDoc;
         let localCategories = [];
-        let currentSettings = {};
         let actionToConfirm = null;
         let debounceTimer;
 
         // --- DOM Elements ---
-        const allViews = ['auth-screen', 'admin-panel', 'settings-panel', 'public-menu-view', 'loading-screen', 'public-loader'];
+        const allViews = ['auth-screen', 'admin-panel', 'settings-panel', 'public-menu-view', 'loading-screen'];
         const permissionErrorOverlay = document.getElementById('permission-error-overlay');
         const loginForm = document.getElementById('login-form');
         const signupForm = document.getElementById('signup-form');
@@ -394,6 +393,7 @@
         const showLoginBtn = document.getElementById('show-login');
         const welcomeMessage = document.getElementById('welcome-message');
         const logoutBtn = document.getElementById('logout-btn');
+        const publishBtn = document.getElementById('publish-btn');
         const goToSettingsBtn = document.getElementById('go-to-settings-btn');
         const backToAdminFromSettingsBtn = document.getElementById('back-to-admin-from-settings-btn');
         const viewPublicMenuBtn = document.getElementById('view-public-menu-btn');
@@ -414,22 +414,15 @@
         const adminMenuList = document.getElementById('admin-menu-list');
         const publicMenuList = document.getElementById('public-menu-list');
         const copyUserIdBtn = document.getElementById('copy-user-id-btn');
-        const publishMenuBtn = document.getElementById('publish-menu-btn');
         
-        // Modals
+        // Confirmation Modal
         const confirmationModal = document.getElementById('confirmation-modal');
         const modalTitle = document.getElementById('modal-title');
         const modalMessage = document.getElementById('modal-message');
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
 
-        const publishModal = document.getElementById('publish-modal');
-        const publicUrlDisplay = document.getElementById('public-url-display');
-        const copyPublicUrlBtn = document.getElementById('copy-public-url-btn');
-        const visitPublicUrlBtn = document.getElementById('visit-public-url-btn');
-        const publishModalCloseBtn = document.getElementById('publish-modal-close-btn');
-
-        // Settings Elements
+        // Settings & Publishing Elements
         const menuTitleInput = document.getElementById('menu-title-input-settings');
         const menuSloganInput = document.getElementById('menu-slogan-input-settings');
         const themePanel = document.getElementById('theme-panel');
@@ -441,7 +434,13 @@
         const logoPreview = document.getElementById('logo-preview');
         const publicLogo = document.getElementById('public-logo');
         const settingsSaveIndicator = document.getElementById('settings-save-indicator');
-        const userIdDisplay = document.getElementById('user-id-display');
+        const domainDisplay = document.getElementById('domain-display');
+        const publicPathInput = document.getElementById('public-path-input');
+        const publicPathError = document.getElementById('public-path-error');
+        const savePublicPathBtn = document.getElementById('save-public-path-btn');
+        const publicUrlDisplayContainer = document.getElementById('public-url-display-container');
+        const publicUrlDisplay = document.getElementById('public-url-display');
+        const copyPublicUrlBtn = document.getElementById('copy-public-url-btn');
 
         // --- Themes ---
         const themes = [
@@ -464,8 +463,7 @@
             const viewElement = document.getElementById(viewId);
             if (viewElement) {
                 viewElement.classList.remove('hidden');
-                // Use flex for centering
-                if (['auth-screen', 'loading-screen', 'public-loader'].includes(viewId)) {
+                if (viewId === 'auth-screen' || viewId === 'loading-screen') {
                     viewElement.classList.add('flex');
                 }
             }
@@ -483,13 +481,11 @@
         
         // --- Authentication and Navigation ---
         onAuthStateChanged(auth, (user) => {
-            if (user) {
+            if (user && !window.location.search.includes('?menu=')) {
                 userId = user.uid;
-                userIdDisplay.value = userId;
                 const username = user.email ? user.email.split('@')[0] : (user.isAnonymous ? 'Usuario Anónimo' : 'Usuario');
                 welcomeMessage.textContent = `Bienvenido, ${username}`;
                 
-                // Use environment-safe paths for private user data
                 menuItemsCollection = collection(db, 'artifacts', appId, 'users', userId, 'menuItems');
                 categoriesCollection = collection(db, 'artifacts', appId, 'users', userId, 'categories');
                 settingsDoc = doc(db, 'artifacts', appId, 'users', userId, 'settings', 'config');
@@ -498,12 +494,9 @@
                 listenForData();
                 itemFormFieldset.disabled = false;
                 formInitMessage.classList.add('hidden');
-            } else {
-                const params = new URLSearchParams(window.location.search);
-                if (!params.has('menu')) {
-                     showView('auth-screen');
-                     if (!loginForm.classList.contains('active')) toggleAuthForms();
-                }
+            } else if (!user && !window.location.search.includes('?menu=')) {
+                showView('auth-screen');
+                if (!loginForm.classList.contains('active')) toggleAuthForms();
             }
         });
         
@@ -512,17 +505,12 @@
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
-                    const params = new URLSearchParams(window.location.search);
-                    if (!params.has('menu')) {
-                       showView('auth-screen');
-                    }
+                    // Stay on auth screen if no token
+                    showView('auth-screen');
                 }
             } catch (error) {
                 console.error("Error during initial sign-in:", error);
-                const params = new URLSearchParams(window.location.search);
-                if (!params.has('menu')) {
-                    showView('auth-screen');
-                }
+                showView('auth-screen');
             }
         }
         
@@ -553,6 +541,7 @@
             return messages[code] || 'Ocurrió un error inesperado.';
         }
 
+        publishBtn.addEventListener('click', () => showView('settings-panel'));
         viewPublicMenuBtn.addEventListener('click', () => showView('public-menu-view'));
         backToAdminBtn.addEventListener('click', () => showView('admin-panel'));
         goToSettingsBtn.addEventListener('click', () => showView('settings-panel'));
@@ -613,69 +602,74 @@
 
 
         // --- Data and Settings Logic ---
-        function listenForData() {
+        function listenForData(isPublic = false) {
             if (!categoriesCollection || !menuItemsCollection || !settingsDoc) return;
             
             onSnapshot(settingsDoc, (doc) => {
-                currentSettings = doc.data() || { themeId: 'purple-wave' }; 
-                applySettings(currentSettings);
+                const settings = doc.data() || { themeId: 'purple-wave' }; 
+                applySettings(settings, isPublic);
             }, handleFirestoreError); 
 
             onSnapshot(query(categoriesCollection, orderBy("order")), (snapshot) => {
                 localCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderCategories(localCategories);
-                renderCategoryOrderList(localCategories);
+                if(!isPublic) {
+                    renderCategories(localCategories);
+                    renderCategoryOrderList(localCategories);
+                }
                 onSnapshot(query(menuItemsCollection), (itemSnapshot) => {
                     const menuItems = itemSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    renderMenu(menuItems, localCategories, 'admin');
-                    renderMenu(menuItems, localCategories, 'public');
+                    renderMenu(menuItems, localCategories, isPublic);
                 }, handleFirestoreError);
             }, handleFirestoreError);
         }
 
-        function applySettings(settings, target = 'all') {
-             const theme = themes.find(t => t.id === settings.themeId) || themes[0];
+        function applySettings(settings, isPublic) {
+            const theme = themes.find(t => t.id === settings.themeId) || themes[0];
 
-            if(target === 'all' || target === 'public') {
-                publicMenuContainer.classList.toggle('purple-wave-gradient', theme.id === 'purple-wave');
-                if (theme.id !== 'purple-wave') {
-                    publicMenuContainer.style.backgroundColor = theme.bg;
-                }
-                publicMenuContainer.style.color = theme.text;
-                publicHeader.style.backgroundColor = theme.header;
-                publicHeader.style.color = theme.headerText;
-                publicSlogan.style.color = theme.accent;
-                document.documentElement.style.setProperty('--card-bg', theme.card);
-                document.documentElement.style.setProperty('--text-color', theme.text);
-                document.documentElement.style.setProperty('--accent-color', theme.accent);
-                document.documentElement.style.setProperty('--header-text', theme.headerText);
+            publicMenuContainer.classList.toggle('purple-wave-gradient', theme.id === 'purple-wave');
 
-                publicTitle.textContent = settings.title || "Nuestro Menú";
-                publicSlogan.textContent = settings.slogan || "Deléitate con nuestros sabores";
-
-                if(settings.logoUrl){
-                    publicLogo.src = settings.logoUrl;
-                    publicLogo.classList.remove('hidden');
-                } else {
-                    publicLogo.classList.add('hidden');
-                }
+            if (theme.id !== 'purple-wave') {
+                publicMenuContainer.style.backgroundColor = theme.bg;
             }
+            publicMenuContainer.style.color = theme.text;
+            publicHeader.style.backgroundColor = theme.header;
+            publicHeader.style.color = theme.headerText;
+            publicSlogan.style.color = theme.accent;
+            document.documentElement.style.setProperty('--card-bg', theme.card);
+            document.documentElement.style.setProperty('--text-color', theme.text);
+            document.documentElement.style.setProperty('--accent-color', theme.accent);
+            document.documentElement.style.setProperty('--header-text', theme.headerText);
 
-            if(target === 'all' || target === 'admin') {
+            publicTitle.textContent = settings.title || "Nuestro Menú";
+            publicSlogan.textContent = settings.slogan || "Deléitate con nuestros sabores";
+            
+            if(!isPublic) {
                 menuTitleInput.value = settings.title || '';
                 menuSloganInput.value = settings.slogan || '';
-
-                 if(settings.logoUrl){
-                    logoPreview.src = settings.logoUrl;
-                    logoBase64.value = settings.logoUrl;
+                if (settings.publicPath) {
+                    publicPathInput.value = settings.publicPath;
+                    const url = `${window.location.origin}${window.location.pathname}?menu=${settings.publicPath}`;
+                    publicUrlDisplay.value = url;
+                    publicUrlDisplayContainer.classList.remove('hidden');
                 } else {
-                    logoPreview.src = 'https://placehold.co/100x100/e2e8f0/e2e8f0?text=Logo';
+                    publicUrlDisplayContainer.classList.add('hidden');
                 }
-                
-                document.querySelectorAll('.theme-button').forEach(btn => {
-                    btn.classList.toggle('selected', btn.dataset.themeId === theme.id);
-                });
             }
+
+
+            if(settings.logoUrl){
+                logoPreview.src = settings.logoUrl;
+                logoBase64.value = settings.logoUrl;
+                publicLogo.src = settings.logoUrl;
+                publicLogo.classList.remove('hidden');
+            } else {
+                logoPreview.src = 'https://placehold.co/100x100/e2e8f0/e2e8f0?text=Logo';
+                publicLogo.classList.add('hidden');
+            }
+
+            document.querySelectorAll('.theme-button').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.themeId === theme.id);
+            });
         }
         
         menuTitleInput.addEventListener('input', () => saveSettings());
@@ -686,14 +680,14 @@
             settingsSaveIndicator.classList.remove('hidden');
             debounceTimer = setTimeout(async () => {
                 if (!userId) { console.error("User not authenticated, can't save settings."); return; }
-                const settingsData = {
+                const settings = {
                     title: menuTitleInput.value,
                     slogan: menuSloganInput.value,
                     themeId: document.querySelector('.theme-button.selected')?.dataset.themeId || 'purple-wave',
                     logoUrl: logoBase64.value
                 };
                 try {
-                     await setDoc(settingsDoc, settingsData, { merge: true });
+                     await setDoc(settingsDoc, settings, { merge: true });
                 } catch(e) {
                     console.error("Error saving settings:", e);
                     handleFirestoreError(e);
@@ -704,6 +698,7 @@
         }
 
         function initializeThemePanel() {
+            domainDisplay.textContent = `${window.location.host}/?menu=`;
             themePanel.innerHTML = themes.map(theme => `
                 <button class="theme-button p-2 border rounded-lg flex flex-col items-center" data-theme-id="${theme.id}" style="--theme-accent: ${theme.accent}">
                     <div class="flex space-x-1 mb-1">
@@ -899,7 +894,7 @@
                 showToast('No se pudo guardar el platillo.', true);
             } finally {
                 submitBtn.disabled = false;
-                resetForm();
+                // Text is reset in resetForm()
             }
         });
         
@@ -929,7 +924,7 @@
             document.getElementById('form-title').textContent = 'Editar Platillo';
             document.getElementById('submit-btn').innerHTML = 'Actualizar Platillo';
             document.getElementById('cancel-edit-btn').classList.remove('hidden');
-            document.querySelector('#menu-item-form').scrollIntoView({ behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
         async function handleDeleteItem(id) {
@@ -945,31 +940,30 @@
         }
         
         // --- UI Rendering ---
-        function renderMenu(items, categories, type, targetElement) {
-            const listElement = targetElement || (type === 'admin' ? adminMenuList : publicMenuList);
-            listElement.innerHTML = '';
-
-            if (items.length === 0 && categories.length === 0) {
-                 if (type === 'admin') {
-                    listElement.innerHTML = `<div class="text-center p-8 bg-white rounded-lg shadow col-span-full"><i class="fas fa-folder-open fa-2x text-gray-400 mb-2"></i><p>Tu menú está vacío. Empieza por añadir una categoría y luego un platillo.</p></div>`;
-                 } else {
-                    listElement.innerHTML = `<div class="text-center p-8 rounded-lg col-span-full" style="background-color: var(--card-bg); color: var(--text-color);"><i class="fas fa-folder-open fa-2x opacity-50 mb-2"></i><p>Este menú aún no tiene contenido.</p></div>`;
-                 }
-                return;
+        function renderMenu(items, categories, isPublic) {
+            const listToRender = isPublic ? publicMenuList : adminMenuList;
+            listToRender.innerHTML = '';
+            
+            if (categories.length === 0) {
+                 const emptyMsgAdmin = `<div class="text-center p-8 bg-white rounded-lg shadow col-span-full"><i class="fas fa-folder-open fa-2x text-gray-400 mb-2"></i><p>Tu menú está vacío. Empieza por añadir una categoría y luego un platillo.</p></div>`;
+                 const emptyMsgPublic = `<div class="text-center p-8 rounded-lg col-span-full" style="background-color: var(--card-bg); color: var(--text-color);"><i class="fas fa-folder-open fa-2x opacity-50 mb-2"></i><p>Este menú aún no tiene contenido.</p></div>`;
+                 listToRender.innerHTML = isPublic ? emptyMsgPublic : emptyMsgAdmin;
+                 return;
             }
 
             const sortedCategories = [...categories].sort((a,b)=> a.order - b.order);
 
             sortedCategories.forEach(category => {
                 const itemsInCategory = items.filter(item => item.category === category.name);
-                if (type === 'public' && itemsInCategory.length === 0) return;
-                listElement.innerHTML += createCategorySection(category.name, itemsInCategory, type === 'admin' ? createAdminItemCard : createPublicItemCard, type);
+                if (isPublic && itemsInCategory.length === 0) return; // Don't show empty categories on public menu
+                
+                listToRender.innerHTML += createCategorySection(category.name, itemsInCategory, isPublic ? createPublicItemCard : createAdminItemCard, isPublic ? "public" : "admin");
             });
 
-            if (type === 'admin') {
-                document.querySelectorAll('.edit-btn').forEach(btn => {
+            if (!isPublic) {
+                 document.querySelectorAll('.edit-btn').forEach(btn => {
                     const item = items.find(i => i.id === btn.dataset.id);
-                    if (item) btn.onclick = () => handleEdit(item);
+                    btn.onclick = () => handleEdit(item);
                 });
                 document.querySelectorAll('.delete-item-btn').forEach(btn => {
                     btn.onclick = () => openConfirmationModal('¿Eliminar este platillo?', 'Esta acción no se puede deshacer.', () => handleDeleteItem(btn.dataset.id));
@@ -1037,10 +1031,6 @@
             confirmationModal.style.display = 'none';
             actionToConfirm = null;
         }
-
-        function closePublishModal() {
-            publishModal.style.display = 'none';
-        }
         
         function showToast(message, isError = false) {
             const toastContainer = document.getElementById('toast-container');
@@ -1067,133 +1057,51 @@
         }
         
         // --- Utility and Publishing Functions ---
-        function copyToClipboard(text, successMessage) {
-            const tempInput = document.createElement('input');
-            tempInput.style.position = 'absolute';
-            tempInput.style.left = '-1000px';
-            tempInput.style.top = '-1000px';
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
+        savePublicPathBtn.addEventListener('click', async () => {
+            const newPath = publicPathInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+            publicPathInput.value = newPath;
+
+            if (!newPath) {
+                publicPathError.textContent = 'Por favor, introduce un nombre para la URL.';
+                return;
+            }
+            publicPathError.textContent = '';
+
+            const publicMenuRef = doc(db, "publicMenus", newPath);
+            const docSnap = await getDoc(publicMenuRef);
+
+            if (docSnap.exists() && docSnap.data().userId !== userId) {
+                publicPathError.textContent = 'Esta URL ya está en uso. Intenta con otra.';
+                return;
+            }
+
             try {
+                await setDoc(doc(db, "publicMenus", newPath), { userId });
+                await setDoc(settingsDoc, { publicPath: newPath }, { merge: true });
+                
+                const url = `${window.location.origin}${window.location.pathname}?menu=${newPath}`;
+                publicUrlDisplay.value = url;
+                publicUrlDisplayContainer.classList.remove('hidden');
+                showToast('¡URL pública guardada y generada!');
+            } catch (e) {
+                console.error("Error saving public path:", e);
+                showToast('Hubo un error al guardar la URL.', true);
+                handleFirestoreError(e);
+            }
+        });
+        
+        function copyToClipboard(elementId, successMessage) {
+             const input = document.getElementById(elementId);
+             input.select();
+             try {
                 document.execCommand('copy');
                 showToast(successMessage);
             } catch (err) {
                 showToast('No se pudo copiar.', true);
             }
-            document.body.removeChild(tempInput);
         }
 
-        function slugify(text) {
-          return text.toString().toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove diacritics
-            .replace(/\s+/g, '-') // replace spaces with -
-            .replace(/[^\w\-]+/g, '') // remove all non-word chars
-            .replace(/\-\-+/g, '-') // replace multiple - with single -
-            .replace(/^-+/, '').replace(/-+$/, ''); // trim - from start/end
-        }
-
-        async function publishMenu() {
-            if (!currentSettings.title) {
-                showToast("Por favor, ponle un nombre a tu restaurante en Configuración primero.", true);
-                showView('settings-panel');
-                return;
-            }
-
-            const slug = slugify(currentSettings.title);
-            if (!slug) {
-                showToast("El nombre del restaurante no es válido para crear una URL.", true);
-                return;
-            }
-
-            publishMenuBtn.disabled = true;
-            publishMenuBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Publicando...';
-            
-            try {
-                const publicMenuRef = doc(db, 'artifacts', appId, 'public', 'data', 'menus', slug);
-                const publicMenuSnap = await getDoc(publicMenuRef);
-
-                if (publicMenuSnap.exists() && publicMenuSnap.data().owner !== userId) {
-                    showToast("Este nombre de restaurante ya está en uso para otra URL.", true);
-                    publishMenuBtn.disabled = false;
-                    publishMenuBtn.innerHTML = '<i class="fas fa-globe mr-2"></i>Publicar';
-                    return;
-                }
-
-                const batch = writeBatch(db);
-                batch.set(publicMenuRef, { owner: userId, slug: slug, ...currentSettings });
-                
-                const categoriesSnapshot = await getDocs(categoriesCollection);
-                categoriesSnapshot.forEach(docSnapshot => {
-                    const publicCatRef = doc(db, 'artifacts', appId, 'public', 'data', 'menus', slug, 'categories', docSnapshot.id);
-                    batch.set(publicCatRef, docSnapshot.data());
-                });
-
-                const itemsSnapshot = await getDocs(menuItemsCollection);
-                itemsSnapshot.forEach(docSnapshot => {
-                    const publicItemRef = doc(db, 'artifacts', appId, 'public', 'data', 'menus', slug, 'items', docSnapshot.id);
-                    batch.set(publicItemRef, docSnapshot.data());
-                });
-
-                await batch.commit();
-
-                const publicURL = `${window.location.origin}${window.location.pathname}?menu=${slug}`;
-                publicUrlDisplay.value = `www.jgmstudiosnic.online/${slug}`;
-                visitPublicUrlBtn.href = publicURL;
-                publishModal.style.display = 'flex';
-                showToast("¡Tu menú ha sido publicado con éxito!");
-
-            } catch (error) {
-                console.error("Error al publicar el menú:", error);
-                handleFirestoreError(error);
-                showToast("Ocurrió un error al publicar.", true);
-            } finally {
-                publishMenuBtn.disabled = false;
-                publishMenuBtn.innerHTML = '<i class="fas fa-globe mr-2"></i>Publicar';
-            }
-        }
-        
-        async function loadPublicMenu(slug) {
-            showView('public-loader');
-            const publicMenuRef = doc(db, 'artifacts', appId, 'public', 'data', 'menus', slug);
-
-            try {
-                const settingsSnap = await getDoc(publicMenuRef);
-                if (!settingsSnap.exists()) {
-                    document.getElementById('public-loader-icon').className = 'fas fa-exclamation-triangle fa-3x text-red-500';
-                    document.getElementById('public-loader-message').textContent = 'El menú que buscas no existe o fue eliminado.';
-                    return;
-                }
-                
-                const settings = settingsSnap.data();
-                const publicCategoriesRef = collection(db, 'artifacts', appId, 'public', 'data', 'menus', slug, 'categories');
-                const publicItemsRef = collection(db, 'artifacts', appId, 'public', 'data', 'menus', slug, 'items');
-
-                const [categoriesSnap, itemsSnap] = await Promise.all([
-                    getDocs(query(publicCategoriesRef, orderBy("order"))),
-                    getDocs(publicItemsRef)
-                ]);
-
-                const categories = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const items = itemsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-                applySettings(settings, 'public');
-                renderMenu(items, categories, 'public', publicMenuList);
-                
-                showView('public-menu-view');
-                document.getElementById('back-to-admin-btn').classList.add('hidden');
-
-            } catch (error) {
-                 console.error("Error loading public menu:", error);
-                 document.getElementById('public-loader-icon').className = 'fas fa-exclamation-triangle fa-3x text-red-500';
-                 document.getElementById('public-loader-message').textContent = 'No se pudo cargar el menú.';
-                 handleFirestoreError(error);
-            }
-        }
-        
-        // --- Event Listeners ---
-        copyUserIdBtn.addEventListener('click', () => copyToClipboard(userIdDisplay.value, 'ID de usuario copiado!'));
-        copyPublicUrlBtn.addEventListener('click', () => copyToClipboard(visitPublicUrlBtn.href, 'URL del menú copiada!'));
+        copyPublicUrlBtn.addEventListener('click', () => copyToClipboard('public-url-display', 'URL pública copiada!'));
 
         modalConfirmBtn.addEventListener('click', () => {
             if (actionToConfirm) actionToConfirm();
@@ -1201,23 +1109,42 @@
         });
         modalCancelBtn.addEventListener('click', closeConfirmationModal);
         confirmationModal.querySelector('.overlay').addEventListener('click', closeConfirmationModal);
-        publishMenuBtn.addEventListener('click', publishMenu);
-        publishModalCloseBtn.addEventListener('click', closePublishModal);
-        publishModal.querySelector('.overlay').addEventListener('click', closePublishModal);
-        
+
         // --- Initialization ---
-        window.onload = () => {
-            const params = new URLSearchParams(window.location.search);
-            const menuSlug = params.get('menu');
+        async function loadPublicData(ownerId) {
+            const publicAppId = 'menujgm';
+            menuItemsCollection = collection(db, 'artifacts', publicAppId, 'users', ownerId, 'menuItems');
+            categoriesCollection = collection(db, 'artifacts', publicAppId, 'users', ownerId, 'categories');
+            settingsDoc = doc(db, 'artifacts', publicAppId, 'users', ownerId, 'settings', 'config');
+            
+            listenForData(true); // Pass true for public mode
+            showView('public-menu-view');
+            document.getElementById('back-to-admin-btn').classList.add('hidden');
+        }
 
-            if (menuSlug) {
-                loadPublicMenu(menuSlug);
-            } else {
-                showView('loading-screen');
-                attemptInitialLogin();
-            }
-
+        window.onload = async () => {
             initializeThemePanel();
+            const urlParams = new URLSearchParams(window.location.search);
+            const publicMenuPath = urlParams.get('menu');
+
+            if (publicMenuPath) {
+                showView('loading-screen');
+                try {
+                    const publicMenuRef = doc(db, "publicMenus", publicMenuPath);
+                    const docSnap = await getDoc(publicMenuRef);
+                    if (docSnap.exists()) {
+                        const ownerId = docSnap.data().userId;
+                        await loadPublicData(ownerId);
+                    } else {
+                        document.getElementById('loading-screen').innerHTML = '<p class="text-2xl text-red-500">Menú no encontrado</p>';
+                    }
+                } catch (e) {
+                    console.error("Error loading public menu:", e);
+                    document.getElementById('loading-screen').innerHTML = '<p class="text-2xl text-red-500">Error al cargar el menú</p>';
+                }
+            } else {
+                await attemptInitialLogin();
+            }
         };
 
     </script>
