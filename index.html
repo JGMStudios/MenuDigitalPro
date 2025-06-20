@@ -297,7 +297,7 @@
                 </div>
                 <div class="mt-4">
                     <button id="save-public-path-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                        Guardar y Generar URL
+                        Publicar y Generar URL
                     </button>
                 </div>
                 <div id="public-url-display-container" class="mt-6 hidden">
@@ -381,6 +381,9 @@
         let userId;
         let menuItemsCollection, categoriesCollection, settingsDoc;
         let localCategories = [];
+        let localItems = [];
+        let localSettings = {};
+        let firestoreListeners = []; // Array to hold unsubscribe functions
         let actionToConfirm = null;
         let debounceTimer;
 
@@ -413,7 +416,6 @@
         const editItemId = document.getElementById('edit-item-id');
         const adminMenuList = document.getElementById('admin-menu-list');
         const publicMenuList = document.getElementById('public-menu-list');
-        const copyUserIdBtn = document.getElementById('copy-user-id-btn');
         
         // Confirmation Modal
         const confirmationModal = document.getElementById('confirmation-modal');
@@ -456,6 +458,13 @@
             { id: 'pearl', name: 'Perla', bg: '#f5f5f4', card: '#e7e5e4', text: '#44403c', header: '#d6d3d1', headerText: '#1c1917', accent: '#f472b6' }
         ];
 
+        // --- Listener Management ---
+        function cleanupListeners() {
+            // Unsubscribe from all active listeners
+            firestoreListeners.forEach(unsubscribe => unsubscribe());
+            // Clear the array
+            firestoreListeners = [];
+        }
 
         // --- Main App Logic ---
         function showView(viewId) {
@@ -483,7 +492,7 @@
         onAuthStateChanged(auth, (user) => {
             if (user && !window.location.search.includes('?menu=')) {
                 userId = user.uid;
-                const username = user.email ? user.email.split('@')[0] : (user.isAnonymous ? 'Usuario Anónimo' : 'Usuario');
+                const username = user.email ? user.email.split('@')[0] : 'Usuario';
                 welcomeMessage.textContent = `Bienvenido, ${username}`;
                 
                 menuItemsCollection = collection(db, 'artifacts', appId, 'users', userId, 'menuItems');
@@ -495,6 +504,7 @@
                 itemFormFieldset.disabled = false;
                 formInitMessage.classList.add('hidden');
             } else if (!user && !window.location.search.includes('?menu=')) {
+                cleanupListeners(); // Detach listeners on logout
                 showView('auth-screen');
                 if (!loginForm.classList.contains('active')) toggleAuthForms();
             }
@@ -505,7 +515,6 @@
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
-                    // Stay on auth screen if no token
                     showView('auth-screen');
                 }
             } catch (error) {
@@ -542,7 +551,11 @@
         }
 
         publishBtn.addEventListener('click', () => showView('settings-panel'));
-        viewPublicMenuBtn.addEventListener('click', () => showView('public-menu-view'));
+        viewPublicMenuBtn.addEventListener('click', () => {
+            applySettings(localSettings, true);
+            renderMenu(localItems, localCategories, true);
+            showView('public-menu-view');
+        });
         backToAdminBtn.addEventListener('click', () => showView('admin-panel'));
         goToSettingsBtn.addEventListener('click', () => showView('settings-panel'));
         backToAdminFromSettingsBtn.addEventListener('click', () => showView('admin-panel'));
@@ -602,28 +615,32 @@
 
 
         // --- Data and Settings Logic ---
-        function listenForData(isPublic = false) {
+        function listenForData() {
             if (!categoriesCollection || !menuItemsCollection || !settingsDoc) return;
             
-            onSnapshot(settingsDoc, (doc) => {
-                const settings = doc.data() || { themeId: 'purple-wave' }; 
-                applySettings(settings, isPublic);
-            }, handleFirestoreError); 
+            cleanupListeners(); // Clean up old listeners before attaching new ones
 
-            onSnapshot(query(categoriesCollection, orderBy("order")), (snapshot) => {
-                localCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if(!isPublic) {
-                    renderCategories(localCategories);
-                    renderCategoryOrderList(localCategories);
-                }
-                onSnapshot(query(menuItemsCollection), (itemSnapshot) => {
-                    const menuItems = itemSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    renderMenu(menuItems, localCategories, isPublic);
-                }, handleFirestoreError);
+            const settingsUnsubscribe = onSnapshot(settingsDoc, (doc) => {
+                localSettings = doc.data() || { themeId: 'purple-wave' }; 
+                applySettings(localSettings);
             }, handleFirestoreError);
+
+            const categoriesUnsubscribe = onSnapshot(query(categoriesCollection, orderBy("order")), (snapshot) => {
+                localCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderCategories(localCategories);
+                renderCategoryOrderList(localCategories);
+                renderMenu(localItems, localCategories); // Re-render menu when categories change
+            }, handleFirestoreError);
+            
+            const itemsUnsubscribe = onSnapshot(query(menuItemsCollection), (itemSnapshot) => {
+                localItems = itemSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderMenu(localItems, localCategories); // Re-render menu when items change
+            }, handleFirestoreError);
+
+            firestoreListeners.push(settingsUnsubscribe, categoriesUnsubscribe, itemsUnsubscribe);
         }
 
-        function applySettings(settings, isPublic) {
+        function applySettings(settings, isPublic = false) {
             const theme = themes.find(t => t.id === settings.themeId) || themes[0];
 
             publicMenuContainer.classList.toggle('purple-wave-gradient', theme.id === 'purple-wave');
@@ -656,7 +673,6 @@
                 }
             }
 
-
             if(settings.logoUrl){
                 logoPreview.src = settings.logoUrl;
                 logoBase64.value = settings.logoUrl;
@@ -668,7 +684,7 @@
             }
 
             document.querySelectorAll('.theme-button').forEach(btn => {
-                btn.classList.toggle('selected', btn.dataset.themeId === theme.id);
+                btn.classList.toggle('selected', btn.dataset.themeId === settings.themeId);
             });
         }
         
@@ -680,14 +696,14 @@
             settingsSaveIndicator.classList.remove('hidden');
             debounceTimer = setTimeout(async () => {
                 if (!userId) { console.error("User not authenticated, can't save settings."); return; }
-                const settings = {
+                const settingsToSave = {
                     title: menuTitleInput.value,
                     slogan: menuSloganInput.value,
                     themeId: document.querySelector('.theme-button.selected')?.dataset.themeId || 'purple-wave',
                     logoUrl: logoBase64.value
                 };
                 try {
-                     await setDoc(settingsDoc, settings, { merge: true });
+                     await setDoc(settingsDoc, settingsToSave, { merge: true });
                 } catch(e) {
                     console.error("Error saving settings:", e);
                     handleFirestoreError(e);
@@ -698,7 +714,7 @@
         }
 
         function initializeThemePanel() {
-            domainDisplay.textContent = `${window.location.host}/?menu=`;
+            domainDisplay.textContent = `${window.location.origin}${window.location.pathname}?menu=`;
             themePanel.innerHTML = themes.map(theme => `
                 <button class="theme-button p-2 border rounded-lg flex flex-col items-center" data-theme-id="${theme.id}" style="--theme-accent: ${theme.accent}">
                     <div class="flex space-x-1 mb-1">
@@ -940,7 +956,7 @@
         }
         
         // --- UI Rendering ---
-        function renderMenu(items, categories, isPublic) {
+        function renderMenu(items, categories, isPublic = false) {
             const listToRender = isPublic ? publicMenuList : adminMenuList;
             listToRender.innerHTML = '';
             
@@ -955,7 +971,7 @@
 
             sortedCategories.forEach(category => {
                 const itemsInCategory = items.filter(item => item.category === category.name);
-                if (isPublic && itemsInCategory.length === 0) return; // Don't show empty categories on public menu
+                if (isPublic && itemsInCategory.length === 0) return;
                 
                 listToRender.innerHTML += createCategorySection(category.name, itemsInCategory, isPublic ? createPublicItemCard : createAdminItemCard, isPublic ? "public" : "admin");
             });
@@ -1066,27 +1082,47 @@
                 return;
             }
             publicPathError.textContent = '';
-
-            const publicMenuRef = doc(db, "publicMenus", newPath);
-            const docSnap = await getDoc(publicMenuRef);
-
-            if (docSnap.exists() && docSnap.data().userId !== userId) {
-                publicPathError.textContent = 'Esta URL ya está en uso. Intenta con otra.';
-                return;
-            }
+            
+            savePublicPathBtn.disabled = true;
+            savePublicPathBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Publicando...';
 
             try {
+                // First, check if the name is taken by someone else
+                const publicMenuRef = doc(db, "publicMenus", newPath);
+                const docSnap = await getDoc(publicMenuRef);
+                if (docSnap.exists() && docSnap.data().userId !== userId) {
+                    publicPathError.textContent = 'Esta URL ya está en uso. Intenta con otra.';
+                    savePublicPathBtn.disabled = false;
+                    savePublicPathBtn.innerHTML = 'Publicar y Generar URL';
+                    return;
+                }
+
+                // Reserve the public path name
                 await setDoc(doc(db, "publicMenus", newPath), { userId });
+                // Save the path in the user's private settings
                 await setDoc(settingsDoc, { publicPath: newPath }, { merge: true });
+
+                // Create the public data object
+                const publicData = {
+                    settings: localSettings,
+                    categories: localCategories,
+                    items: localItems
+                };
                 
+                // Publish the data to the public collection
+                await setDoc(doc(db, "publishedMenus", newPath), publicData);
+
                 const url = `${window.location.origin}${window.location.pathname}?menu=${newPath}`;
                 publicUrlDisplay.value = url;
                 publicUrlDisplayContainer.classList.remove('hidden');
-                showToast('¡URL pública guardada y generada!');
+                showToast('¡Menú publicado exitosamente!');
             } catch (e) {
-                console.error("Error saving public path:", e);
-                showToast('Hubo un error al guardar la URL.', true);
+                console.error("Error publishing menu:", e);
+                showToast('Hubo un error al publicar el menú.', true);
                 handleFirestoreError(e);
+            } finally {
+                 savePublicPathBtn.disabled = false;
+                 savePublicPathBtn.innerHTML = 'Publicar y Generar URL';
             }
         });
         
@@ -1109,18 +1145,30 @@
         });
         modalCancelBtn.addEventListener('click', closeConfirmationModal);
         confirmationModal.querySelector('.overlay').addEventListener('click', closeConfirmationModal);
-
+        
         // --- Initialization ---
-        async function loadPublicData(ownerId) {
-            const publicAppId = 'menujgm';
-            menuItemsCollection = collection(db, 'artifacts', publicAppId, 'users', ownerId, 'menuItems');
-            categoriesCollection = collection(db, 'artifacts', publicAppId, 'users', ownerId, 'categories');
-            settingsDoc = doc(db, 'artifacts', publicAppId, 'users', ownerId, 'settings', 'config');
-            
-            listenForData(true); // Pass true for public mode
-            showView('public-menu-view');
-            document.getElementById('back-to-admin-btn').classList.add('hidden');
+        async function loadPublicMenu(publicPath) {
+            showView('loading-screen');
+            try {
+                const menuDocRef = doc(db, "publishedMenus", publicPath);
+                const menuDocSnap = await getDoc(menuDocRef);
+
+                if (menuDocSnap.exists()) {
+                    const publicData = menuDocSnap.data();
+                    applySettings(publicData.settings, true);
+                    renderMenu(publicData.items, publicData.categories, true);
+                    showView('public-menu-view');
+                    document.getElementById('back-to-admin-btn').classList.add('hidden');
+                } else {
+                    document.getElementById('loading-screen').innerHTML = '<p class="text-2xl text-red-500">Menú no encontrado</p>';
+                }
+            } catch (e) {
+                console.error("Error loading public menu:", e);
+                document.getElementById('loading-screen').innerHTML = '<p class="text-2xl text-red-500">Error al cargar el menú</p>';
+                handleFirestoreError(e);
+            }
         }
+
 
         window.onload = async () => {
             initializeThemePanel();
@@ -1128,20 +1176,7 @@
             const publicMenuPath = urlParams.get('menu');
 
             if (publicMenuPath) {
-                showView('loading-screen');
-                try {
-                    const publicMenuRef = doc(db, "publicMenus", publicMenuPath);
-                    const docSnap = await getDoc(publicMenuRef);
-                    if (docSnap.exists()) {
-                        const ownerId = docSnap.data().userId;
-                        await loadPublicData(ownerId);
-                    } else {
-                        document.getElementById('loading-screen').innerHTML = '<p class="text-2xl text-red-500">Menú no encontrado</p>';
-                    }
-                } catch (e) {
-                    console.error("Error loading public menu:", e);
-                    document.getElementById('loading-screen').innerHTML = '<p class="text-2xl text-red-500">Error al cargar el menú</p>';
-                }
+                await loadPublicMenu(publicMenuPath);
             } else {
                 await attemptInitialLogin();
             }
