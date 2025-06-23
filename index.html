@@ -420,7 +420,7 @@
                             </div>
                             <div class="pt-1">
                                  <button id="save-public-path-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                                    Publicar y Generar URL
+                                    Publicar y Actualizar
                                 </button>
                             </div>
                              <div id="public-url-display-container" class="pt-2 hidden">
@@ -1105,15 +1105,10 @@
                     publicPathStatus.className = 'text-sm text-red-600';
                     savePublicPathBtn.disabled = true;
                 } else {
-                    publicPathStatus.textContent = '¡Disponible!';
-                    publicPathStatus.className = 'text-sm text-green-600';
-                    if (!isInitialLoad) {
-                       savePublicPathBtn.disabled = false;
-                    } else if(localSettings.publicPath === path) {
-                        savePublicPathBtn.disabled = true;
-                    } else {
-                         savePublicPathBtn.disabled = false;
-                    }
+                    const isOwnUrl = docSnap.exists() && docSnap.data().userId === userId;
+                    publicPathStatus.textContent = isOwnUrl ? 'Tu URL actual. Puedes actualizarla.' : '¡URL Disponible!';
+                    publicPathStatus.className = isOwnUrl ? 'text-sm text-blue-600' : 'text-sm text-green-600';
+                    savePublicPathBtn.disabled = false;
                 }
             } catch (error) {
                 handleFirebaseError(error, "comprobar disponibilidad de URL");
@@ -1424,19 +1419,10 @@
                         imageUrl: finalImageUrl,
                         isFeatured: document.getElementById('item-featured').checked,
                         isAvailable: document.getElementById('item-available').checked,
-                        order: 0 // Will be overwritten if not new
                     };
                     
-                    if (id) {
-                        const existingItem = localItems.find(item => item.id === id);
-                        itemData.order = existingItem ? existingItem.order : 0;
-                    } else {
-                        const itemsInCategory = localItems.filter(item => item.category === itemData.category);
-                        itemData.order = itemsInCategory.length;
-                    }
-                    
                     const docRef = id ? doc(menuItemsCollection, id) : doc(menuItemsCollection, docId);
-                    await setDoc(docRef, itemData);
+                    await setDoc(docRef, itemData, { merge: true });
 
                     success = true;
                     showToast(id ? 'Producto actualizado exitosamente.' : 'Producto agregado exitosamente.');
@@ -1467,8 +1453,9 @@
                         if (sanitizedPath !== localSettings.publicPath) {
                             checkPathAvailability(sanitizedPath);
                         } else {
-                             publicPathStatus.textContent = '';
-                             savePublicPathBtn.disabled = true;
+                             publicPathStatus.textContent = 'Tu URL actual. Puedes actualizarla.';
+                             publicPathStatus.className = 'text-sm text-blue-600';
+                             savePublicPathBtn.disabled = false;
                         }
                     }, 500);
                 });
@@ -1500,14 +1487,15 @@
                     publicUrlDisplay.value = url;
                     publicUrlDisplayContainer.classList.remove('hidden');
                     generateQRCode(url);
-                    showToast('¡Catálogo publicado exitosamente!');
-                    publicPathStatus.textContent = '¡Publicado!';
-                    publicPathStatus.className = 'text-sm text-green-600';
+                    showToast('¡Catálogo publicado/actualizado exitosamente!');
+                    publicPathStatus.textContent = 'Tu URL actual. Puedes actualizarla.';
+                    publicPathStatus.className = 'text-sm text-blue-600';
 
                 } catch (e) {
                     handleFirebaseError(e, "publicar catálogo");
                 } finally {
-                    savePublicPathBtn.innerHTML = 'Publicar y Generar URL';
+                    savePublicPathBtn.innerHTML = 'Publicar y Actualizar';
+                    savePublicPathBtn.disabled = false;
                 }
             });
             
@@ -1553,5 +1541,3 @@
     </script>
 </body>
 </html>
-
-
