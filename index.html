@@ -3,28 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menú Digital Pro</title>
-    <!-- Tailwind CSS CDN -->
+    <title>PharaLux - Tu Catálogo Digital</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
         }
-        /* Estilos para el scrollbar */
+        /* Scrollbar styles */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
         
         .modal {
-            display: none; /* Oculto por defecto, JS lo cambiará a flex cuando sea necesario */
+            display: none; /* Hidden by default */
             position: fixed;
             top: 0;
             left: 0;
@@ -45,23 +43,34 @@
         .auth-form { display: none; }
         .auth-form.active { display: block; }
 
-        .theme-button {
+        .theme-button, .rubro-button {
             transition: transform 0.2s, box-shadow 0.2s;
         }
-        .theme-button:hover {
+        .theme-button:hover, .rubro-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         .theme-button.selected {
             box-shadow: 0 0 0 3px white, 0 0 0 5px var(--theme-accent, #fb923c);
         }
+        .rubro-button.selected {
+            box-shadow: 0 0 0 3px white, 0 0 0 5px #4f46e5;
+            background-color: #e0e7ff;
+            color: #3730a3;
+        }
         .draggable {
             cursor: move;
         }
         .dragging {
             opacity: 0.5;
+            transform: scale(0.98);
         }
-        /* Estilos para notificaciones Toast */
+        .category-drag-over {
+            background-color: #eef2ff; /* A light indigo background */
+            outline: 2px dashed #6366f1;
+            border-radius: 0.5rem;
+        }
+        /* Toast notification styles */
         .toast {
             transition: all 0.5s ease-in-out;
             opacity: 0;
@@ -71,7 +80,7 @@
             opacity: 1;
             transform: translateX(0);
         }
-        /* Estilo de fondo gradiente para el nuevo tema */
+        /* Gradient background for the new theme */
         .purple-wave-gradient {
             background: linear-gradient(135deg, #4c1d95, #8b5cf6, #c084fc, #f0abfc);
             background-size: 400% 400%;
@@ -83,263 +92,396 @@
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
+        
+        /* Pulse animation for the logo */
+        .logo-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        /* Toggle Switch styles */
+        .toggle-label {
+            transition: background-color .2s ease-in-out;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #4f46e5;
+        }
+        .toggle-checkbox:checked + .toggle-label .toggle-dot {
+            transform: translateX(100%);
+        }
+        .toggle-dot {
+            transition: transform .2s ease-in-out;
+        }
+        .featured-ribbon {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 60px;
+            height: 60px;
+            overflow: hidden;
+        }
+        .featured-ribbon::before, .featured-ribbon::after {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            border: 5px solid transparent;
+        }
+        .featured-ribbon::before {
+            top: 0;
+            left: 0;
+        }
+        .featured-ribbon::after {
+            bottom: 0;
+            right: 0;
+        }
+        .featured-ribbon span {
+            position: absolute;
+            display: block;
+            width: 85px;
+            padding: 5px 0;
+            background-color: var(--accent-color, #fbbf24);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+            color: #fff;
+            font: bold 12px/1 'Inter', sans-serif;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+            text-align: center;
+            right: -17px;
+            top: 15px;
+            transform: rotate(45deg);
+        }
     </style>
 </head>
 <body class="antialiased text-gray-800">
     
-    <!-- Contenedor para Notificaciones Toast -->
     <div id="toast-container" class="fixed top-5 right-5 z-[150] space-y-3"></div>
     
-    <!-- Pantalla de Error de Permisos -->
     <div id="permission-error-overlay" class="hidden fixed inset-0 items-center justify-center p-4" style="background-color: rgba(0, 0, 0, 0.85); z-index: 200;">
         <div class="bg-white p-8 rounded-lg shadow-2xl max-w-lg text-center mx-4">
             <i class="fas fa-lock fa-3x text-red-500 mb-4"></i>
             <h2 class="text-2xl font-bold text-gray-800 mb-2">Error Crítico: Permisos Denegados</h2>
-            <p class="text-gray-600 mb-4">La base de datos está bloqueando la aplicación. Por favor, asegúrate de haber actualizado las reglas de seguridad en tu panel de Firebase como se indicó.</p>
+            <p id="permission-error-message" class="text-gray-600 mb-4">La base de datos o el almacenamiento están bloqueando la aplicación. Por favor, asegúrate de haber actualizado las **REGLAS DE SEGURIDAD** en tu panel de Firebase como se indicó.</p>
+             <p class="text-xs text-gray-500 mt-4">Consulta la conversación para ver las reglas de seguridad recomendadas.</p>
         </div>
     </div>
 
+    <div id="auth-screen" class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-black text-white p-4 hidden">
+        <div class="flex-grow flex items-center justify-center w-full">
+            <div class="w-full max-w-sm">
+                <div class="text-center mb-8">
+                    <svg class="w-32 h-32 mx-auto text-amber-300 logo-pulse" viewBox="0 0 129.6 86.4" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M74.16,63.36c-2.26.41-4.44.44-6.72.24.01-4.04-.15-8.09.5-12.09-4.66-1.57-5.72-5.19-5.78-9.75,1.93,1.16,3.53,0,3.82-2.06.55-4-1.91-8.48-1.66-12.58l3.43,7.97c1.25,2.39,1.29,2.98,4.01,3.67s5.8.36,8.09,2.47c3.58.32,7.45.28,10.99.77.46.06,1.3.05,1.34.59.06.81-1.41,4.73-2.08,5.14-5.32,1.07-12.53.73-14.92,6.68-.39.97-1.02,3.29-1.02,4.26v4.68ZM76.56,41.52l-7.2-1.2c.45.62,1.31.57,2,1,.49.3.82.89,1.27,1.13,1.15.61,3.5.5,3.93-.93Z"/>
+                        <path d="M79.73,56.35c-.32-.95-.97-3.98-.3-4.64.47-.46,3.51-1.27,4.32-1.44,2.95-.63,7.02.07,8.53-2.99.52-1.06,2.38-5.72,1.08-6.36-1.2-.58-6.66-.46-7.16-.88-.49-1.66-5.05-13.21-4.59-13.87,2.33-.75,2.39.04,3.09,1.81.06.16-.04.51.38.33.18-.08,1.12-1.33,1.28-1.6.87-1.49,1.14-2.93.88-4.64,9.81,10.31,11.22,26.97,2.89,38.61-3.22-1.96-6.7-3.49-10.39-4.34Z"/>
+                        <path d="M85.2,25.68c-.42-.09-.37-.72-.71-1.09-1.28-1.39-3.6.07-3.85-.11l.24-1.68c-1.29.29-2.49.88-3.84.24.32,2.32-.62,3.95-2.88,4.56.01-.54.47-.84.67-1.37,1.4-3.67-.84-6.98-4.87-6.55-3.6.38-3.08,4.58-2.88,7.2-3.1-2.52-3.37-7.96.43-9.89,4.15-2.11,9.11.77,12.89,2.45-.51-1.72-2.92-2.71-4.5-3.3-18.26-6.89-38.03,5.51-39.19,25.01-.12,2.07.36,4.39.26,6.24-.09,1.7-1.28,3.58-.97,5.41-.05.07-.3-.12-.36-.24-.41-.72-1.23-5.12-1.31-6.13-1.73-21.87,17.82-38.67,39.17-32.69,4.7,1.32,5.56,2.52,9.08,5.32.41.33.99.37,1.56.84,1.7,1.37,1.82,3.86,1.07,5.77ZM76.32,18.48c-.33-.31-1.1.77-1.16,1.14-.42,2.34,3.69,3.62,4.04.78-.52-.06-.79.45-1.31.46-1.18.02-2.26-1.26-1.57-2.37Z"/>
+                        <path d="M63.84,24.96c.57.6-1.9,2.01-2.29,2.39-3.53,3.46-4.88,9.65-5.68,14.36-5.42,2.38-10.09,6.22-13.86,10.74l-3.84,5.87c-.67-4.32-.83-8.43,1.08-12.48.58-1.24,1.64-2.28,2.04-3.6l3.24,5.27,1.55-1.32c-.89-.85-3.44-4.89-3-5.87.05-.1,1.12-1.17,1.21-1.21l3.23,5.41c.44.38,1.83-.69,1.89-1l-3.3-5.73,2.13-1.31,3.12,5.65,2.16-.98c1.56-6.23,3.46-13.98,10.32-16.2Z"/>
+                        <path d="M60.72,73.44c-6.92-.64-14.03-4.37-18.48-9.72l3.44-1.34c2.98,4.3,7.64,7.26,12.64,8.66l.21-2.38c-3.99-1.37-7.73-3.98-10.29-7.35l2.87-.97c2.05,2.71,4.72,4.91,7.8,6.38.32-.07.64-1.64.5-1.92-.1-.19-2.92-2-3.5-2.52-.31-.28-2.71-2.71-2.4-3l2.71-.49c.28.57,3.58,4.01,4.01,3.61.88-3.35,2.07-7.02,4.08-9.84-1.77,6.83-3.36,13.79-3.6,20.88Z"/>
+                        <path d="M65.04,16.08l-1.36,1.64c-9.2.26-17.69,7.72-20.41,16.31-.49,1.56-.63,3.76-1.17,5.07-.37.89-2.08,2.52-2.74,3.38-.21-13.65,11.79-26.59,25.68-26.4Z"/>
+                        <path d="M77.27,69.82c-1.5-4.95-1.78-9.97-1.19-15.1l.83,7.21c.67,2.69,1.35,5.41,2.74,7.83l-.07.32c-2.32,1.29-4.98,2.42-7.57,3-1.27.29-8.24,1.39-8.78.61.09-6.91.64-13.96,2.54-20.65.45-.05.19.5.17.77-.54,6.03-1.04,11.9-.31,17.97,3.85.76,7.97-.79,11.65-1.95Z"/>
+                        <path d="M60.72,42c-.13,1.62-1.08,1.36-2.25,1.95-7.61,3.88-13.94,10.28-17.68,17.97-.2.15-1.47-1.43-1.44-2.02.06-1.23,3.91-5.98,4.92-7.11,4.29-4.78,10.09-9.31,16.44-10.79Z"/>
+                        <path d="M62.88,19.44l-.26,1.66c-6.75.85-10.94,5.75-13.87,11.45-.34.66-.58,1.88-.99,2.37-.45.55-2.02,1.02-2.65,1.55,2.02-8.37,8.83-16.14,17.76-17.04Z"/>
+                        <path d="M60.72,45.12l.23,1.18c-4.69,1.96-8.31,5.97-11.22,10.02-.58.81-1.33,2.56-1.95,3.09-.35.31-3.24,1.43-3.38,1.3.34-.85.93-1.76,1.43-2.52,3.55-5.45,8.72-10.72,14.88-13.08Z"/>
+                        <polygon points="84.48 40.08 81.57 39.7 78.52 30.78 79.68 27.12 84.48 40.08"/>
+                        <path d="M62.61,23.07l.18.94c-3.03,1.13-5.79,3.18-7.54,5.91-.38.6-1.4,3.13-1.72,3.32-.16.09-2.31.44-2.4.36,1.7-4.87,6.06-10.01,11.49-10.53Z"/>
+                        <path d="M61.9,48.93c-1.73,1.1-3.56,2.78-4.9,4.34-.88,1.03-2.47,3.87-3.22,4.46-.7.55-1.66.42-2.42.82,2.08-4.46,5.59-8.21,9.76-10.78.42-.1.92.95.78,1.15Z"/>
+                        <path d="M60.69,40.05l-2.61.75c.42-4.51,1.84-9.65,5.04-12.96-1.66,3.88-2.17,8.02-2.43,12.21Z"/>
+                        <path d="M77.52,52.8l.59,3.37c1.01,4.22,2.53,8.35,4.93,11.99-.68-.05-1.52,1.4-2.03.72-.86-1.99-1.74-3.96-2.35-6.05-.26-.89-1.14-3.93-1.14-4.62v-5.4Z"/>
+                        <path d="M63.6,30c-.44,2.24,2.23,8.56.74,10.21-.49.54-1.73.52-2.06-.13-.09-2.69.15-5.79.67-8.45.1-.52.08-1.4.65-1.63Z"/>
+                        <path d="M56.4,57.36c-.3-.25,3.84-5.2,4.32-5.64.89-.83,2.26-2.29,3.12-.72-.98.8-1.93,1.78-2.76,2.76-1.49,1.75-1.91,3.65-4.68,3.6Z"/>
+                        <path d="M74.16,64.56l.24,1.44c-2.28.6-4.6.85-6.96.72v-1.68c2.2.46,4.51-.23,6.72-.48Z"/>
+                        <path d="M74.63,67.69l.26,1.18c-2.38.47-4.74,1.21-7.2,1.2v-1.43s6.95-.96,6.95-.96Z"/>
+                        <path d="M52.32,39.84c-.64-.24-2.55-4.12-2.4-4.32l1.58-.48c1.76,1.14,1.14,3.07.82,4.8Z"/>
+                        <path d="M86.88,60.48c.25.37-1.11,1.91-1.45,2.28-.3.33-2.72,2.39-2.87,2.28l-.38-1.2,3.54-3.56,1.16.21Z"/>
+                        <path d="M83.55,66.03c.05-.09,1.41-.89,1.77-1.23.97-.9,2.13-1.98,2.78-3.09.28-.16.87.06.93.33.11.55-4.16,4.61-4.92,5.15-.33-.26-.81-.75-.57-1.16Z"/>
+                        <polygon points="78.72 38.4 75.36 37.92 77.04 33.84 78.72 38.4"/>
+                        <path d="M84.48,59.28c.33.42-2.51,3.16-3.12,3.36.06-.34-.24-.76-.19-1.05.06-.33,2.64-3.15,3.3-2.31Z"/>
+                    </svg>
+                    <h1 class="text-4xl font-bold tracking-wider">PharaLux</h1>
+                    <p class="text-lg text-amber-200/80 mt-2">Tu Catálogo Digital</p>
+                </div>
 
-    <!-- Pantalla de Autenticación (Login y Registro) -->
-    <div id="auth-screen" class="min-h-screen flex-col items-center justify-center bg-gray-900 text-white p-4 hidden">
-         <div class="w-full max-w-sm">
-            <div class="text-center mb-6">
-                <i class="fas fa-utensils fa-3x mb-4 text-purple-400"></i>
-                <h1 class="text-3xl font-bold">Menú Digital Pro</h1>
+                <form id="login-form" class="auth-form active bg-gray-800/50 backdrop-blur-sm p-8 rounded-lg shadow-lg border border-amber-300/20">
+                    <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión</h2>
+                    <div class="space-y-4">
+                        <input type="email" id="login-email" placeholder="Correo electrónico" required autocomplete="email" class="w-full px-4 py-3 bg-gray-700/50 border border-amber-300/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400">
+                        <input type="password" id="login-password" placeholder="Contraseña" required autocomplete="current-password" class="w-full px-4 py-3 bg-gray-700/50 border border-amber-300/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    </div>
+                    <div class="flex items-center justify-between mt-4">
+                        <label class="flex items-center text-sm text-gray-400 cursor-pointer">
+                            <input type="checkbox" id="remember-me" class="form-checkbox h-4 w-4 text-amber-500 bg-gray-700 border-amber-300/30 rounded focus:ring-amber-400">
+                            <span class="ml-2">Recordar correo</span>
+                        </label>
+                    </div>
+                    <p id="login-error" class="text-red-500 text-sm text-center h-4 my-2"></p>
+                    <button type="submit" class="w-full mt-2 bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-4 rounded-lg transition">Ingresar</button>
+                    <p class="text-center text-sm mt-6">
+                        ¿No tienes cuenta? <a href="#" id="show-signup" class="font-medium text-amber-300 hover:text-amber-200">Crea una aquí</a>
+                    </p>
+                </form>
+
+                <form id="signup-form" class="auth-form bg-gray-800/50 backdrop-blur-sm p-8 rounded-lg shadow-lg border border-amber-300/20">
+                    <h2 class="text-2xl font-bold text-center mb-6">Crear Cuenta Nueva</h2>
+                    <div class="space-y-4">
+                        <input type="email" id="signup-email" placeholder="Correo electrónico" required autocomplete="email" class="w-full px-4 py-3 bg-gray-700/50 border border-amber-300/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400">
+                        <input type="password" id="signup-password" placeholder="Contraseña (mínimo 6 caracteres)" required autocomplete="new-password" class="w-full px-4 py-3 bg-gray-700/50 border border-amber-300/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400">
+                        <input type="password" id="signup-code" placeholder="Código de Autenticación" required class="w-full px-4 py-3 bg-gray-700/50 border border-amber-300/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    </div>
+                    <p id="signup-error" class="text-red-500 text-sm text-center h-4 my-2"></p>
+                    <button type="submit" class="w-full mt-4 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-lg transition">Registrarse</button>
+                    <p class="text-center text-sm mt-6">
+                        ¿Ya tienes una cuenta? <a href="#" id="show-login" class="font-medium text-amber-300 hover:text-amber-200">Inicia sesión</a>
+                    </p>
+                </form>
             </div>
-
-            <form id="login-form" class="auth-form active bg-gray-800 p-8 rounded-lg shadow-lg">
-                <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión</h2>
-                <div class="space-y-4">
-                    <input type="email" id="login-email" placeholder="Correo electrónico" required class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    <input type="password" id="login-password" placeholder="Contraseña" required class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                </div>
-                <p id="login-error" class="text-red-500 text-sm text-center h-4 my-2"></p>
-                <button type="submit" class="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition">Ingresar</button>
-                <p class="text-center text-sm mt-6">
-                    ¿No tienes cuenta? <a href="#" id="show-signup" class="font-medium text-purple-400 hover:text-purple-300">Crea una aquí</a>
-                </p>
-            </form>
-
-            <form id="signup-form" class="auth-form bg-gray-800 p-8 rounded-lg shadow-lg">
-                <h2 class="text-2xl font-bold text-center mb-6">Crear Cuenta Nueva</h2>
-                <div class="space-y-4">
-                    <input type="email" id="signup-email" placeholder="Correo electrónico" required class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    <input type="password" id="signup-password" placeholder="Contraseña (mínimo 6 caracteres)" required class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                </div>
-                 <p id="signup-error" class="text-red-500 text-sm text-center h-4 my-2"></p>
-                <button type="submit" class="w-full mt-4 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-lg transition">Registrarse</button>
-                <p class="text-center text-sm mt-6">
-                    ¿Ya tienes una cuenta? <a href="#" id="show-login" class="font-medium text-purple-400 hover:text-purple-300">Inicia sesión</a>
-                </p>
-            </form>
         </div>
+        <footer class="text-center py-4 text-gray-500 text-sm">
+            JGM Studios © 2025. Todos los derechos reservados.
+        </footer>
     </div>
     
-     <!-- Pantalla de Carga Inicial -->
     <div id="loading-screen" class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-4">
         <i class="fas fa-spinner fa-spin fa-3x text-purple-400"></i>
         <p class="mt-4 text-lg">Cargando...</p>
     </div>
 
-
-    <!-- Panel de Administración -->
     <div id="admin-panel" class="hidden">
-        <header class="bg-white shadow-md p-4 flex flex-wrap justify-between items-center sticky top-0 z-30 gap-y-2">
-            <div class="w-full sm:w-auto">
-                 <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-th-large mr-2"></i>Panel de Administración</h1>
-                 <p id="welcome-message" class="text-sm text-gray-600"></p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                 <button id="publish-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                    <i class="fas fa-globe-americas mr-2"></i>Publicar
-                </button>
-                 <button id="go-to-settings-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300">
-                    <i class="fas fa-cog mr-2"></i>Configuración
-                </button>
-                 <button id="view-public-menu-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                    <i class="fas fa-eye mr-2"></i>Ver Menú
-                </button>
-                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                    <i class="fas fa-sign-out-alt mr-2"></i>Salir
-                </button>
-            </div>
-        </header>
-
-        <main class="p-4 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-1 space-y-8">
-                <div class="bg-white p-6 rounded-xl shadow-lg sticky top-24">
-                     <h2 class="text-xl font-bold mb-4">Administrar Categorías</h2>
-                     <form id="category-form" class="flex space-x-2 mb-4">
-                        <input type="text" id="category-name" placeholder="Nueva categoría" required class="flex-grow mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
-                        <button type="submit" id="add-category-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mt-1"><i class="fas fa-plus"></i></button>
-                     </form>
-                     <div id="category-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
+        <div class="min-h-screen flex flex-col">
+            <header class="bg-white shadow-md p-4 flex flex-wrap justify-between items-center sticky top-0 z-30 gap-y-2">
+                <div class="w-full sm:w-auto">
+                    <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-th-large mr-2"></i>Panel de Administración</h1>
+                    <p id="welcome-message" class="text-sm text-gray-600"></p>
                 </div>
-
-                <div class="bg-white p-6 rounded-xl shadow-lg">
-                    <h2 id="form-title" class="text-xl font-bold mb-4">Añadir Nuevo Platillo</h2>
-                    <form id="menu-item-form" class="space-y-4">
-                         <fieldset id="item-form-fieldset" disabled>
-                            <p id="form-init-message" class="text-sm text-center text-gray-500 mb-4">Conectando...</p>
-                            <input type="hidden" id="edit-item-id">
-                            <div>
-                                <label for="item-name" class="block text-sm font-medium text-gray-700">Nombre del Platillo</label>
-                                <input type="text" id="item-name" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-                            </div>
-                            <div>
-                                <label for="item-description" class="block text-sm font-medium text-gray-700">Descripción</label>
-                                <textarea id="item-description" rows="3" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"></textarea>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="md:col-span-2">
-                                    <label for="item-price" class="block text-sm font-medium text-gray-700">Precio</label>
-                                    <input type="number" id="item-price" step="0.01" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-                                </div>
-                                <div>
-                                    <label for="item-currency" class="block text-sm font-medium text-gray-700">Moneda</label>
-                                    <select id="item-currency" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-                                        <option value="C$">C$ Córdoba</option>
-                                        <option value="$">$ Dolar</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <label for="item-category-select" class="block text-sm font-medium text-gray-700">Categoría</label>
-                                <select id="item-category-select" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-                                    <option value="">Selecciona una categoría</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Imagen del Platillo</label>
-                                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                                    <div class="space-y-1 text-center">
-                                        <img id="image-preview" src="" class="h-24 w-24 object-cover mx-auto mb-4 hidden rounded-md aspect-square" alt="Vista previa de la imagen">
-                                        <i id="image-icon" class="fas fa-image fa-3x mx-auto h-12 w-12 text-gray-400"></i>
-                                        <div class="flex text-sm text-gray-600 justify-center">
-                                            <label for="item-image" class="relative cursor-pointer bg-white rounded-md font-medium text-purple-600 hover:text-purple-500">
-                                                <span>Sube un archivo</span>
-                                                <input id="item-image" name="item-image" type="file" class="sr-only" accept="image/*">
-                                            </label>
-                                        </div>
-                                        <p class="text-xs text-gray-500">PNG, JPG, GIF hasta 5MB</p>
-                                    </div>
-                                </div>
-                                <input type="hidden" id="image-base64">
-                            </div>
-                            <div class="flex space-x-2">
-                                <button type="submit" id="submit-btn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700">Añadir Platillo</button>
-                                <button type="button" id="cancel-edit-btn" class="hidden w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Cancelar</button>
-                            </div>
-                         </fieldset>
-                    </form>
-                </div>
-            </div>
-            <div id="admin-menu-list" class="lg:col-span-2 space-y-6">
-                 <div id="admin-list-container" class="text-center p-8 text-gray-500">
-                    <i class="fas fa-spinner fa-spin fa-2x"></i>
-                    <p>Cargando menú...</p>
-                </div>
-            </div>
-        </main>
-    </div>
-    
-    <!-- Panel de Configuración -->
-    <div id="settings-panel" class="hidden">
-         <header class="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-30">
-            <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-palette mr-2"></i>Configuración y Publicación</h1>
-             <button id="back-to-admin-from-settings-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300 mr-2">
-                <i class="fas fa-arrow-left mr-2"></i>Volver al Panel
-            </button>
-        </header>
-        <main class="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
-             <div class="bg-white p-6 rounded-xl shadow-lg">
-                <div class="space-y-6">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-lg font-medium text-gray-900">Logotipo y Título</h3>
-                        <span id="settings-save-indicator" class="text-sm font-normal text-gray-400 ml-2 hidden">Guardando...</span>
-                    </div>
-                    <div class="mt-2 flex items-center space-x-6">
-                        <img id="logo-preview" src="https://placehold.co/100x100/e2e8f0/e2e8f0?text=Logo" class="h-24 w-24 object-contain rounded-md bg-gray-100">
-                         <input type="hidden" id="logo-base64">
-                        <label for="logo-image-input" class="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50">
-                            <span>Cambiar Logotipo</span>
-                            <input id="logo-image-input" type="file" class="sr-only" accept="image/*">
-                        </label>
-                    </div>
-                    <div>
-                        <label for="menu-title-input-settings" class="block text-sm font-medium text-gray-700">Título Principal (Nombre del Restaurante)</label>
-                        <input type="text" id="menu-title-input-settings" placeholder="Ej: Mi Restaurante" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
-                    </div>
-                    <div>
-                        <label for="menu-slogan-input-settings" class="block text-sm font-medium text-gray-700">Subtítulo (Eslogan)</label>
-                        <input type="text" id="menu-slogan-input-settings" placeholder="Ej: El mejor sabor de la ciudad" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
-                    </div>
-                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Tema del Menú</label>
-                        <div id="theme-panel" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-2">
-                            <!-- Los temas se generan con JS -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Publicar tu Menú</h3>
-                <p class="text-sm text-gray-500 mb-4">Crea una URL pública y única para tu menú. Elige un nombre corto para tu restaurante. Usa solo letras minúsculas, números y guiones.</p>
-                <div>
-                    <label for="public-path-input" class="block text-sm font-medium text-gray-700">URL Personalizada</label>
-                    <div class="mt-1 flex rounded-md shadow-sm">
-                        <span id="domain-display" class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm"></span>
-                        <input type="text" id="public-path-input" placeholder="nombre-de-tu-restaurante" class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md focus:ring-purple-500 focus:border-purple-500 sm:text-sm border-gray-300">
-                    </div>
-                    <p id="public-path-error" class="text-red-500 text-sm h-4 mt-1"></p>
-                </div>
-                <div class="mt-4">
-                    <button id="save-public-path-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                        Publicar y Generar URL
+                <div class="flex flex-wrap gap-2">
+                    <button id="go-to-settings-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300">
+                        <i class="fas fa-cog mr-2"></i>Configuración
+                    </button>
+                    <button id="view-public-menu-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                        <i class="fas fa-eye mr-2"></i>Ver Catálogo
+                    </button>
+                     <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Salir
                     </button>
                 </div>
-                <div id="public-url-display-container" class="mt-6 hidden">
-                    <label class="block text-sm font-medium text-gray-700">Tu URL Pública:</label>
-                    <div class="mt-1 flex">
-                        <input type="text" id="public-url-display" readonly class="block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-md shadow-sm">
-                        <button id="copy-public-url-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-r-md hover:bg-gray-300"><i class="fas fa-copy"></i></button>
+            </header>
+
+            <main class="p-4 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 flex-grow">
+                <div class="lg:col-span-1 space-y-8">
+                    <div class="bg-white p-6 rounded-xl shadow-lg sticky top-24">
+                        <h2 class="text-xl font-bold mb-4">Administrar Categorías</h2>
+                        <form id="category-form" class="flex space-x-2 mb-4">
+                            <input type="text" id="category-name" placeholder="Nueva categoría" required class="flex-grow mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                            <button type="submit" id="add-category-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mt-1"><i class="fas fa-plus"></i></button>
+                        </form>
+                        <div id="category-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h2 id="form-title" class="text-xl font-bold mb-4">Añadir Nuevo Producto</h2>
+                        <form id="menu-item-form" class="space-y-4">
+                            <fieldset id="item-form-fieldset" disabled>
+                                <p id="form-init-message" class="text-sm text-center text-gray-500 mb-4">Conectando...</p>
+                                <input type="hidden" id="edit-item-id">
+                                <input type="hidden" id="current-image-url">
+                                <div>
+                                    <label for="item-name" class="block text-sm font-medium text-gray-700">Nombre del Producto</label>
+                                    <input type="text" id="item-name" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label for="item-description" class="block text-sm font-medium text-gray-700">Descripción</label>
+                                    <textarea id="item-description" rows="3" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"></textarea>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="md:col-span-2">
+                                        <label for="item-price" class="block text-sm font-medium text-gray-700">Precio</label>
+                                        <input type="number" id="item-price" step="0.01" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                                    </div>
+                                    <div>
+                                        <label for="item-currency" class="block text-sm font-medium text-gray-700">Moneda</label>
+                                        <select id="item-currency" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                                            <option value="C$">C$ Córdoba</option>
+                                            <option value="$">$ Dolar</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="item-category-select" class="block text-sm font-medium text-gray-700">Categoría</label>
+                                    <select id="item-category-select" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                                        <option value="">Selecciona una categoría</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Imagen del Producto</label>
+                                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                                        <div class="space-y-1 text-center">
+                                            <img id="image-preview" src="" class="h-24 w-24 object-cover mx-auto mb-4 hidden rounded-md aspect-square" alt="Vista previa de la imagen">
+                                            <i id="image-icon" class="fas fa-image fa-3x mx-auto h-12 w-12 text-gray-400"></i>
+                                            <div class="flex text-sm text-gray-600 justify-center">
+                                                <label for="item-image" class="relative cursor-pointer bg-white rounded-md font-medium text-purple-600 hover:text-purple-500">
+                                                    <span>Sube un archivo</span>
+                                                    <input id="item-image" name="item-image" type="file" class="sr-only" accept="image/*">
+                                                </label>
+                                            </div>
+                                            <p class="text-xs text-gray-500">PNG, JPG, GIF hasta 5MB</p>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="image-base64">
+                                </div>
+                                <div class="space-y-2">
+                                     <div class="flex items-center">
+                                        <input id="item-featured" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                        <label for="item-featured" class="ml-2 block text-sm text-gray-900">Marcar como Destacado</label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input id="item-available" type="checkbox" checked class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                        <label for="item-available" class="ml-2 block text-sm text-gray-900">Disponible para la venta</label>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-2 pt-2">
+                                    <button type="submit" id="submit-btn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700">Añadir Producto</button>
+                                    <button type="button" id="cancel-edit-btn" class="hidden w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Cancelar</button>
+                                </div>
+                            </fieldset>
+                        </form>
                     </div>
                 </div>
-            </div>
-
-             <div class="bg-white p-6 rounded-xl shadow-lg">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Ordenar Categorías</h3>
-                <p class="text-sm text-gray-500 mb-4">Arrastra y suelta las categorías para cambiar su orden en el menú público.</p>
-                <ul id="category-order-list" class="space-y-2">
-                    <!-- Categorías para ordenar -->
-                </ul>
-             </div>
-        </main>
-    </div>
-
-    <!-- Vista Pública del Menú -->
-    <div id="public-menu-view" class="hidden">
-        <div id="public-menu-container" class="transition-colors duration-500 min-h-screen">
-            <header id="public-header" class="shadow-lg p-4 sticky top-0 z-30 transition-colors duration-500 flex items-center relative min-h-[100px]">
-                <div class="absolute left-4 top-1/2 -translate-y-1/2">
-                     <img id="public-logo" src="" class="h-20 w-20 object-contain hidden" alt="Logotipo del restaurante">
+                <div id="admin-menu-list" class="lg:col-span-2 space-y-6">
+                    <div id="admin-list-container" class="text-center p-8 text-gray-500">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p>Cargando catálogo...</p>
+                    </div>
                 </div>
-                <div class="w-full text-center px-28">
-                    <h1 id="public-title" class="text-4xl font-bold">Nuestro Menú</h1>
-                    <p id="public-slogan" class="mt-1 text-lg">Deléitate con nuestros sabores</p>
-                </div>
-                <button id="back-to-admin-btn" class="absolute top-4 right-4 bg-gray-700 bg-opacity-50 hover:bg-opacity-75 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                    <i class="fas fa-arrow-left mr-2"></i>Volver
-                </button>
-            </header>
-            <div id="public-menu-list" class="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
-            </div>
+            </main>
+            <footer class="text-center p-4 text-gray-500 text-sm">
+                JGM Studios © 2025. Todos los derechos reservados.
+            </footer>
         </div>
     </div>
     
-    <!-- Modal de Confirmación -->
+    <div id="settings-panel" class="hidden">
+        <div class="min-h-screen flex flex-col">
+            <header class="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-30">
+                <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-palette mr-2"></i>Configuración y Publicación</h1>
+                <button id="back-to-admin-from-settings-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300 mr-2">
+                    <i class="fas fa-arrow-left mr-2"></i>Volver al Panel
+                </button>
+            </header>
+            <main class="p-4 md:p-8 max-w-4xl mx-auto space-y-8 flex-grow">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-medium text-gray-900">Logotipo y Título</h3>
+                            <span id="settings-save-indicator" class="text-sm font-normal text-gray-400 ml-2 hidden">Guardando...</span>
+                        </div>
+                        <div class="mt-2 flex items-center space-x-6">
+                            <div id="logo-preview-container" class="h-24 w-24 object-contain rounded-md bg-gray-100 flex items-center justify-center">
+                                <img id="logo-preview" src="https://placehold.co/100x100/e2e8f0/e2e8f0?text=Logo" class="h-24 w-24 object-contain" alt="Vista previa del logotipo">
+                            </div>
+                            <label for="logo-image-input" class="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50">
+                                <span id="logo-upload-text">Cambiar Logotipo</span>
+                                <i id="logo-upload-spinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
+                            </label>
+                            <input id="logo-image-input" type="file" class="sr-only" accept="image/*">
+                        </div>
+                        <div>
+                            <label for="menu-title-input-settings" class="block text-sm font-medium text-gray-700">Título Principal (Nombre del Negocio)</label>
+                            <input type="text" id="menu-title-input-settings" placeholder="Ej: Mi Restaurante" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                        </div>
+                        <div>
+                            <label for="menu-slogan-input-settings" class="block text-sm font-medium text-gray-700">Subtítulo (Eslogan)</label>
+                            <input type="text" id="menu-slogan-input-settings" placeholder="Ej: El mejor sabor de la ciudad" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Tema del Catálogo</label>
+                            <div id="theme-panel" class="grid grid-cols-4 sm:grid-cols-5 gap-2 mt-2">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Publicar tu Catálogo</h3>
+                    <p class="text-sm text-gray-500 mb-6">Crea una URL pública y un código QR para tu catálogo. Elige un nombre corto, usando solo letras, números y guiones.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                        <!-- Columna Izquierda: Controles de URL -->
+                        <div class="space-y-4">
+                            <div>
+                                <label for="public-path-input" class="block text-sm font-medium text-gray-700">URL Personalizada</label>
+                                <div class="mt-1 grid grid-cols-3 border border-gray-300 rounded-md shadow-sm">
+                                    <span id="domain-display" class="col-span-2 inline-flex items-center px-3 bg-gray-100 text-gray-500 sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis border-r border-gray-300"></span>
+                                    <input type="text" id="public-path-input" placeholder="tu-negocio" class="col-span-1 block w-full px-3 py-2 focus:ring-purple-500 focus:border-purple-500 sm:text-sm border-0 rounded-r-md">
+                                </div>
+                                 <p id="public-path-status" class="text-sm h-5 mt-2"></p>
+                            </div>
+                            <div class="pt-1">
+                                 <button id="save-public-path-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    Publicar y Generar URL
+                                </button>
+                            </div>
+                             <div id="public-url-display-container" class="pt-2 hidden">
+                                <label class="block text-sm font-medium text-gray-700">Tu URL Pública:</label>
+                                <div class="mt-1 flex">
+                                    <input type="text" id="public-url-display" readonly class="block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-md shadow-sm">
+                                    <button id="copy-public-url-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-r-md hover:bg-gray-300"><i class="fas fa-copy"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Columna Derecha: Código QR -->
+                        <div class="flex justify-center md:justify-end">
+                             <div id="qr-code-container" class="hidden flex-col items-center w-full max-w-[220px]">
+                                <h3 class="text-lg font-medium text-gray-900 mb-2 text-center">Código QR de tu Catálogo</h3>
+                                <div class="p-2 border rounded-lg bg-white shadow-inner">
+                                    <canvas id="qrcode-canvas"></canvas>
+                                </div>
+                                <button id="download-qr-btn" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                                    <i class="fas fa-download mr-2"></i>Descargar QR
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Ordenar Categorías</h3>
+                    <p class="text-sm text-gray-500 mb-4">Arrastra y suelta las categorías para cambiar su orden en el catálogo público.</p>
+                    <ul id="category-order-list" class="space-y-2">
+                    </ul>
+                </div>
+            </main>
+            <footer class="text-center p-4 text-gray-500 text-sm">
+                JGM Studios © 2025. Todos los derechos reservados.
+            </footer>
+        </div>
+    </div>
+
+    <div id="public-menu-view" class="hidden">
+        <div id="public-menu-container" class="transition-colors duration-500 min-h-screen flex flex-col">
+            <div class="flex-grow">
+                <header id="public-header" class="shadow-lg p-4 sticky top-0 z-30 transition-colors duration-500 flex items-center relative min-h-[100px]">
+                    <div class="absolute left-4 top-1/2 -translate-y-1/2">
+                        <img id="public-logo" src="" class="h-20 w-20 object-contain hidden" alt="Logotipo del restaurante">
+                    </div>
+                    <div class="w-full text-center px-28">
+                        <h1 id="public-title" class="text-4xl font-bold">PharaLux</h1>
+                        <p id="public-slogan" class="mt-1 text-lg">Tu Catálogo Digital</p>
+                    </div>
+                    <button id="back-to-admin-btn" class="absolute top-4 right-4 bg-gray-700 bg-opacity-50 hover:bg-opacity-75 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                        <i class="fas fa-arrow-left mr-2"></i>Volver
+                    </button>
+                </header>
+                <div id="public-menu-list" class="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
+                </div>
+            </div>
+            <!-- Footer removed from public view -->
+        </div>
+    </div>
+    
     <div id="confirmation-modal" class="hidden modal">
         <div class="overlay"></div>
         <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-sm z-[101]">
@@ -352,30 +494,45 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
     <script type="module">
+        // --- IMPORTANTE: REGLAS DE SEGURIDAD ---
+        // Para que la subida de imágenes funcione, DEBES configurar tus reglas
+        // de Firebase Storage para permitir escrituras de usuarios autenticados.
+        // Ve a tu Consola de Firebase -> Storage -> Rules y pega:
+        //
+        // rules_version = '2';
+        // service firebase.storage {
+        //   match /b/{bucket}/o {
+        //     match /users/{userId}/{allPaths=**} {
+        //       allow read, write: if request.auth != null && request.auth.uid == userId;
+        //     }
+        //   }
+        // }
+        //-----------------------------------------
+
         // Import necessary Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, deleteDoc, getDoc, query, where, getDocs, writeBatch, orderBy, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, deleteDoc, getDoc, query, where, getDocs, writeBatch, orderBy, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref as storageRef, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
         
         // --- App and Firebase Configuration ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+        const firebaseConfig = {
             apiKey: "AIzaSyAKejVfnb0RxtFknbxTX8dcoMCEDdplpQc",
             authDomain: "menujgm.firebaseapp.com",
+            databaseURL: "https://menujgm-default-rtdb.firebaseio.com",
             projectId: "menujgm",
-            storageBucket: "menujgm.appspot.com",
+            storageBucket: "menujgm.firebasestorage.app",
             messagingSenderId: "213391992387",
-            appId: "1:213391992387:web:ef198b8286bb09ee94d6f6",
-            measurementId: "G-48B92ZHLXR"
+            appId: "1:213391992387:web:0fe0e4dc80bdf6c394d6f6",
+            measurementId: "G-B7HKJG426B"
         };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'menujgm';
 
         // Initialize Firebase services
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        setLogLevel('debug'); // Enable logs for debugging
+        const storage = getStorage(app);
 
         // --- Global Variables ---
         let userId;
@@ -383,86 +540,53 @@
         let localCategories = [];
         let localItems = [];
         let localSettings = {};
-        let firestoreListeners = []; // Array to hold unsubscribe functions
+        let firestoreListeners = [];
         let actionToConfirm = null;
         let debounceTimer;
+        let isLiveEditing = false;
 
-        // --- DOM Elements ---
-        const allViews = ['auth-screen', 'admin-panel', 'settings-panel', 'public-menu-view', 'loading-screen'];
-        const permissionErrorOverlay = document.getElementById('permission-error-overlay');
-        const loginForm = document.getElementById('login-form');
-        const signupForm = document.getElementById('signup-form');
-        const showSignupBtn = document.getElementById('show-signup');
-        const showLoginBtn = document.getElementById('show-login');
-        const welcomeMessage = document.getElementById('welcome-message');
-        const logoutBtn = document.getElementById('logout-btn');
-        const publishBtn = document.getElementById('publish-btn');
-        const goToSettingsBtn = document.getElementById('go-to-settings-btn');
-        const backToAdminFromSettingsBtn = document.getElementById('back-to-admin-from-settings-btn');
-        const viewPublicMenuBtn = document.getElementById('view-public-menu-btn');
-        const backToAdminBtn = document.getElementById('back-to-admin-btn');
-        const itemFormFieldset = document.getElementById('item-form-fieldset');
-        const formInitMessage = document.getElementById('form-init-message');
-        const menuItemForm = document.getElementById('menu-item-form');
-        const categoryForm = document.getElementById('category-form');
-        const categoryListDiv = document.getElementById('category-list');
-        const categoryOrderList = document.getElementById('category-order-list');
-        const categorySelect = document.getElementById('item-category-select');
-        const imageInput = document.getElementById('item-image');
-        const imagePreview = document.getElementById('image-preview');
-        const imageIcon = document.getElementById('image-icon');
-        const imageBase64 = document.getElementById('image-base64');
-        const logoBase64 = document.getElementById('logo-base64');
-        const editItemId = document.getElementById('edit-item-id');
-        const adminMenuList = document.getElementById('admin-menu-list');
-        const publicMenuList = document.getElementById('public-menu-list');
-        
-        // Confirmation Modal
-        const confirmationModal = document.getElementById('confirmation-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMessage = document.getElementById('modal-message');
-        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
-        const modalCancelBtn = document.getElementById('modal-cancel-btn');
 
-        // Settings & Publishing Elements
-        const menuTitleInput = document.getElementById('menu-title-input-settings');
-        const menuSloganInput = document.getElementById('menu-slogan-input-settings');
-        const themePanel = document.getElementById('theme-panel');
-        const publicTitle = document.getElementById('public-title');
-        const publicSlogan = document.getElementById('public-slogan');
-        const publicMenuContainer = document.getElementById('public-menu-container');
-        const publicHeader = document.getElementById('public-header');
-        const logoImageInput = document.getElementById('logo-image-input');
-        const logoPreview = document.getElementById('logo-preview');
-        const publicLogo = document.getElementById('public-logo');
-        const settingsSaveIndicator = document.getElementById('settings-save-indicator');
-        const domainDisplay = document.getElementById('domain-display');
-        const publicPathInput = document.getElementById('public-path-input');
-        const publicPathError = document.getElementById('public-path-error');
-        const savePublicPathBtn = document.getElementById('save-public-path-btn');
-        const publicUrlDisplayContainer = document.getElementById('public-url-display-container');
-        const publicUrlDisplay = document.getElementById('public-url-display');
-        const copyPublicUrlBtn = document.getElementById('copy-public-url-btn');
+        // --- DOM Element Variables ---
+        let allViews, permissionErrorOverlay, loginForm, signupForm, showSignupBtn, showLoginBtn, welcomeMessage, logoutBtn,
+            goToSettingsBtn, backToAdminFromSettingsBtn, viewPublicMenuBtn, backToAdminBtn, 
+            itemFormFieldset, formInitMessage, menuItemForm, categoryForm, categoryListDiv, 
+            categoryOrderList, categorySelect, imageInput, imagePreview, imageIcon, 
+            imageBase64, currentImageUrlInput, editItemId, adminMenuList, publicMenuList, 
+            confirmationModal, modalTitle, modalMessage, modalConfirmBtn, modalCancelBtn, 
+            menuTitleInput, menuSloganInput, themePanel, publicTitle, publicSlogan, 
+            publicMenuContainer, publicHeader, logoImageInput, logoPreview, publicLogo, 
+            settingsSaveIndicator, domainDisplay, publicPathInput, publicPathStatus, 
+            savePublicPathBtn, publicUrlDisplayContainer, publicUrlDisplay, copyPublicUrlBtn, 
+            qrCodeContainer, qrcodeCanvas, downloadQrBtn, permissionErrorMessage, 
+            logoUploadText, logoUploadSpinner;
 
         // --- Themes ---
         const themes = [
-            { id: 'purple-wave', name: 'Onda Púrpura', bg: '#4c1d95', card: 'rgba(255,255,255,0.1)', text: '#ffffff', header: 'rgba(0,0,0,0.2)', headerText: '#f0abfc', accent: '#f0abfc' },
-            { id: 'default', name: 'Clásico', bg: '#f9fafb', card: '#ffffff', text: '#374151', header: '#ffffff', headerText: '#1f2937', accent: '#f97316' },
-            { id: 'dark', name: 'Oscuro', bg: '#111827', card: '#1f2937', text: '#d1d5db', header: '#1f2937', headerText: '#f9fafb', accent: '#fbbf24' },
-            { id: 'ruby', name: 'Rubí', bg: '#fef2f2', card: '#fee2e2', text: '#991b1b', header: '#fecaca', headerText: '#b91c1c', accent: '#ef4444' },
-            { id: 'sapphire', name: 'Zafiro', bg: '#e0f2fe', card: '#bae6fd', text: '#0c4a6e', header: '#7dd3fc', headerText: '#0369a1', accent: '#0ea5e9' },
-            { id: 'emerald', name: 'Esmeralda', bg: '#ecfdf5', card: '#d1fae5', text: '#065f46', header: '#a7f3d0', headerText: '#047857', accent: '#10b981' },
-            { id: 'amethyst', name: 'Amatista', bg: '#f5f3ff', card: '#ede9fe', text: '#5b21b6', header: '#ddd6fe', headerText: '#6d28d9', accent: '#8b5cf6' },
-            { id: 'topaz', name: 'Topacio', bg: '#fffbeb', card: '#fef3c7', text: '#78350f', header: '#fde68a', headerText: '#92400e', accent: '#f59e0b' },
-            { id: 'onyx', name: 'Ónix', bg: '#171717', card: '#262626', text: '#e5e5e5', header: '#0a0a0a', headerText: '#fafafa', accent: '#d4af37' },
-            { id: 'pearl', name: 'Perla', bg: '#f5f5f4', card: '#e7e5e4', text: '#44403c', header: '#d6d3d1', headerText: '#1c1917', accent: '#f472b6' }
+             { id: 'default', name: 'Clásico', bg: '#f9fafb', card: '#ffffff', text: '#374151', header: '#ffffff', headerText: '#1f2937', accent: '#f97316' },
+             { id: 'dark', name: 'Oscuro', bg: '#111827', card: '#1f2937', text: '#d1d5db', header: '#1f2937', headerText: '#f9fafb', accent: '#fbbf24' },
+             { id: 'purple-wave', name: 'Onda Púrpura', bg: '#4c1d95', card: 'rgba(255,255,255,0.1)', text: '#ffffff', header: 'rgba(0,0,0,0.2)', headerText: '#f0abfc', accent: '#f0abfc' },
+             { id: 'google', name: 'Google', bg: '#f8f9fa', card: '#ffffff', text: '#202124', header: '#ffffff', headerText: '#4285F4', accent: '#EA4335' },
+             { id: 'gemini', name: 'Gemini', bg: '#131314', card: '#1e1f20', text: '#e3e3e3', header: '#1e1f20', headerText: '#89b3f7', accent: '#c58af9' },
+             { id: 'chatgpt', name: 'ChatGPT', bg: '#343541', card: '#444654', text: '#d1d5db', header: '#444654', headerText: '#ffffff', accent: '#10a37f' },
+             { id: 'facebook', name: 'Facebook', bg: '#f0f2f5', card: '#ffffff', text: '#1c1e21', header: '#ffffff', headerText: '#1877f2', accent: '#1877f2' },
+             { id: 'x-corp', name: 'X', bg: '#000000', card: '#1a1a1a', text: '#ffffff', header: '#000000', headerText: '#ffffff', accent: '#ffffff' },
+             { id: 'blackdark', name: 'Black Dark', bg: '#121212', card: '#1e1e1e', text: '#e0e0e0', header: '#181818', headerText: '#ffffff', accent: '#38bdf8' },
+             { id: 'ruby', name: 'Rubí', bg: '#fef2f2', card: '#fee2e2', text: '#991b1b', header: '#fecaca', headerText: '#b91c1c', accent: '#ef4444' },
+             { id: 'sapphire', name: 'Zafiro', bg: '#e0f2fe', card: '#bae6fd', text: '#0c4a6e', header: '#7dd3fc', headerText: '#0369a1', accent: '#0ea5e9' },
+             { id: 'emerald', name: 'Esmeralda', bg: '#ecfdf5', card: '#d1fae5', text: '#065f46', header: '#a7f3d0', headerText: '#047857', accent: '#10b981' },
+             { id: 'amethyst', name: 'Amatista', bg: '#f5f3ff', card: '#ede9fe', text: '#5b21b6', header: '#ddd6fe', headerText: '#6d28d9', accent: '#8b5cf6' },
+             { id: 'topaz', name: 'Topacio', bg: '#fffbeb', card: '#fef3c7', text: '#78350f', header: '#fde68a', headerText: '#92400e', accent: '#f59e0b' },
+             { id: 'onyx', name: 'Ónix', bg: '#171717', card: '#262626', text: '#e5e5e5', header: '#0a0a0a', headerText: '#fafafa', accent: '#d4af37' },
+             { id: 'pearl', name: 'Perla', bg: '#f5f5f4', card: '#e7e5e4', text: '#44403c', header: '#d6d3d1', headerText: '#1c1917', accent: '#f472b6' },
+             { id: 'sunrise', name: 'Amanecer', bg: '#fff0e6', card: '#ffe2d1', text: '#5c3d2e', header: '#ffc9a8', headerText: '#e85d04', accent: '#ff9100' },
+             { id: 'ocean', name: 'Océano', bg: '#e0f7fa', card: '#b2ebf2', text: '#004d40', header: '#80deea', headerText: '#00796b', accent: '#00bcd4' },
+             { id: 'forest', name: 'Bosque', bg: '#f1f8e9', card: '#e6ee9c', text: '#33691e', header: '#dcedc8', headerText: '#558b2f', accent: '#7cb342' },
+             { id: 'rosegold', name: 'Oro Rosa', bg: '#fff1f2', card: '#ffe4e6', text: '#881337', header: '#fecdd3', headerText: '#be123c', accent: '#f43f5e' }
         ];
 
         // --- Listener Management ---
         function cleanupListeners() {
-            // Unsubscribe from all active listeners
             firestoreListeners.forEach(unsubscribe => unsubscribe());
-            // Clear the array
             firestoreListeners = [];
         }
 
@@ -472,12 +596,12 @@
             const viewElement = document.getElementById(viewId);
             if (viewElement) {
                 viewElement.classList.remove('hidden');
-                if (viewId === 'auth-screen' || viewId === 'loading-screen') {
+                 if (viewId === 'auth-screen' || viewId === 'loading-screen') {
                     viewElement.classList.add('flex');
                 }
             }
         }
-
+        
         function toggleAuthForms() {
             loginForm.classList.toggle('active');
             signupForm.classList.toggle('active');
@@ -485,80 +609,45 @@
             document.getElementById('signup-error').textContent = '';
         }
 
-        showSignupBtn.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(); });
-        showLoginBtn.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(); });
-        
         // --- Authentication and Navigation ---
         onAuthStateChanged(auth, (user) => {
-            if (user && !window.location.search.includes('?menu=')) {
+            if (window.location.search.includes('?menu=')) {
+                return;
+            }
+
+            if (user) {
                 userId = user.uid;
                 const username = user.email ? user.email.split('@')[0] : 'Usuario';
                 welcomeMessage.textContent = `Bienvenido, ${username}`;
                 
-                menuItemsCollection = collection(db, 'artifacts', appId, 'users', userId, 'menuItems');
-                categoriesCollection = collection(db, 'artifacts', appId, 'users', userId, 'categories');
-                settingsDoc = doc(db, 'artifacts', appId, 'users', userId, 'settings', 'config');
+                menuItemsCollection = collection(db, 'users', userId, 'menuItems');
+                categoriesCollection = collection(db, 'users', userId, 'categories');
+                settingsDoc = doc(db, 'users', userId, 'settings', 'config');
                 
                 showView('admin-panel');
                 listenForData();
                 itemFormFieldset.disabled = false;
                 formInitMessage.classList.add('hidden');
-            } else if (!user && !window.location.search.includes('?menu=')) {
-                cleanupListeners(); // Detach listeners on logout
+            } else {
+                cleanupListeners();
+                userId = null;
                 showView('auth-screen');
-                if (!loginForm.classList.contains('active')) toggleAuthForms();
+                if (loginForm && !loginForm.classList.contains('active')) toggleAuthForms();
             }
         });
-        
-        async function attemptInitialLogin() {
-             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    showView('auth-screen');
-                }
-            } catch (error) {
-                console.error("Error during initial sign-in:", error);
-                showView('auth-screen');
-            }
-        }
-        
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            signInWithEmailAndPassword(auth, email, password)
-                .catch(error => { document.getElementById('login-error').textContent = getAuthErrorMessage(error.code); });
-        });
-
-        signupForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            createUserWithEmailAndPassword(auth, email, password)
-                .catch(error => { document.getElementById('signup-error').textContent = getAuthErrorMessage(error.code); });
-        });
-        
-        logoutBtn.addEventListener('click', () => signOut(auth));
         
         function getAuthErrorMessage(code) {
             const messages = {
-                'auth/wrong-password': 'Contraseña incorrecta.', 'auth/user-not-found': 'Usuario no encontrado.',
-                'auth/invalid-email': 'Correo no válido.', 'auth/email-already-in-use': 'Correo ya registrado.',
+                'auth/wrong-password': 'Contraseña incorrecta.',
+                'auth/user-not-found': 'Usuario no encontrado.',
+                'auth/invalid-email': 'Correo no válido.',
+                'auth/email-already-in-use': 'El correo ya está registrado.',
                 'auth/weak-password': 'La contraseña es muy débil (mínimo 6 caracteres).',
+                'auth/invalid-credential': 'Las credenciales proporcionadas no son válidas.',
+                'auth/operation-not-allowed': 'El inicio de sesión por correo no está habilitado. Actívalo en tu Consola de Firebase.'
             };
             return messages[code] || 'Ocurrió un error inesperado.';
         }
-
-        publishBtn.addEventListener('click', () => showView('settings-panel'));
-        viewPublicMenuBtn.addEventListener('click', () => {
-            applySettings(localSettings, true);
-            renderMenu(localItems, localCategories, true);
-            showView('public-menu-view');
-        });
-        backToAdminBtn.addEventListener('click', () => showView('admin-panel'));
-        goToSettingsBtn.addEventListener('click', () => showView('settings-panel'));
-        backToAdminFromSettingsBtn.addEventListener('click', () => showView('admin-panel'));
 
         // --- Image Logic ---
         function resizeImage(file, maxWidth, maxHeight, quality) {
@@ -583,59 +672,42 @@
                         ctx.drawImage(img, 0, 0, width, height);
                         resolve(canvas.toDataURL('image/jpeg', quality));
                     };
-                    img.onerror = reject;
+                    img.onerror = (error) => reject(new Error("No se pudo cargar la imagen para procesarla."));
                 };
-                reader.onerror = reject;
+                reader.onerror = (error) => reject(new Error("No se pudo leer el archivo de imagen."));
             });
         }
-
-        async function handleImageUpload(e, previewEl, base64El, callback) {
-            const file = e.target.files[0];
-            if (!file || !file.type.startsWith('image/')) return;
-            
-            if (file.size > 5 * 1024 * 1024) { 
-                showToast('La imagen es demasiado grande (máx 5MB).', true);
-                return;
-            }
-
-            try {
-                const resizedDataUrl = await resizeImage(file, 800, 800, 0.8);
-                base64El.value = resizedDataUrl;
-                previewEl.src = resizedDataUrl;
-                previewEl.classList.remove('hidden');
-                if (callback) callback();
-            } catch (error) {
-                console.error("Error resizing image:", error);
-                showToast("Hubo un problema al procesar la imagen.", true);
-            }
-        }
-
-        imageInput.addEventListener('change', (e) => handleImageUpload(e, imagePreview, imageBase64, () => imageIcon.classList.add('hidden')));
-        logoImageInput.addEventListener('change', (e) => handleImageUpload(e, logoPreview, logoBase64, saveSettings));
-
 
         // --- Data and Settings Logic ---
         function listenForData() {
             if (!categoriesCollection || !menuItemsCollection || !settingsDoc) return;
             
-            cleanupListeners(); // Clean up old listeners before attaching new ones
+            cleanupListeners(); 
 
             const settingsUnsubscribe = onSnapshot(settingsDoc, (doc) => {
                 localSettings = doc.data() || { themeId: 'purple-wave' }; 
                 applySettings(localSettings);
-            }, handleFirestoreError);
+            }, (error) => handleFirebaseError(error, "escuchar cambios de configuración"));
 
             const categoriesUnsubscribe = onSnapshot(query(categoriesCollection, orderBy("order")), (snapshot) => {
                 localCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderCategories(localCategories);
                 renderCategoryOrderList(localCategories);
-                renderMenu(localItems, localCategories); // Re-render menu when categories change
-            }, handleFirestoreError);
+                if (document.getElementById('public-menu-view').classList.contains('hidden')) {
+                     renderMenu(localItems, localCategories, false);
+                } else {
+                    renderMenu(localItems, localCategories, true);
+                }
+            }, (error) => handleFirebaseError(error, "escuchar cambios de categorías"));
             
-            const itemsUnsubscribe = onSnapshot(query(menuItemsCollection), (itemSnapshot) => {
+            const itemsUnsubscribe = onSnapshot(query(menuItemsCollection, orderBy("price")), (itemSnapshot) => {
                 localItems = itemSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderMenu(localItems, localCategories); // Re-render menu when items change
-            }, handleFirestoreError);
+                 if (document.getElementById('public-menu-view').classList.contains('hidden')) {
+                     renderMenu(localItems, localCategories, false);
+                } else {
+                    renderMenu(localItems, localCategories, true);
+                }
+            }, (error) => handleFirebaseError(error, "escuchar cambios de productos"));
 
             firestoreListeners.push(settingsUnsubscribe, categoriesUnsubscribe, itemsUnsubscribe);
         }
@@ -657,25 +729,27 @@
             document.documentElement.style.setProperty('--accent-color', theme.accent);
             document.documentElement.style.setProperty('--header-text', theme.headerText);
 
-            publicTitle.textContent = settings.title || "Nuestro Menú";
-            publicSlogan.textContent = settings.slogan || "Deléitate con nuestros sabores";
+            publicTitle.textContent = settings.title || "PharaLux";
+            publicSlogan.textContent = settings.slogan || "Tu Catálogo Digital";
             
             if(!isPublic) {
-                menuTitleInput.value = settings.title || '';
-                menuSloganInput.value = settings.slogan || '';
+                menuTitleInput.value = settings.title || 'PharaLux';
+                menuSloganInput.value = settings.slogan || 'Tu Catálogo Digital';
                 if (settings.publicPath) {
                     publicPathInput.value = settings.publicPath;
+                    checkPathAvailability(settings.publicPath, true);
                     const url = `${window.location.origin}${window.location.pathname}?menu=${settings.publicPath}`;
                     publicUrlDisplay.value = url;
                     publicUrlDisplayContainer.classList.remove('hidden');
+                    generateQRCode(url);
                 } else {
                     publicUrlDisplayContainer.classList.add('hidden');
+                    qrCodeContainer.classList.add('hidden');
                 }
             }
 
             if(settings.logoUrl){
                 logoPreview.src = settings.logoUrl;
-                logoBase64.value = settings.logoUrl;
                 publicLogo.src = settings.logoUrl;
                 publicLogo.classList.remove('hidden');
             } else {
@@ -688,10 +762,7 @@
             });
         }
         
-        menuTitleInput.addEventListener('input', () => saveSettings());
-        menuSloganInput.addEventListener('input', () => saveSettings());
-        
-        function saveSettings() {
+        function saveSettingsDebounced() {
             clearTimeout(debounceTimer);
             settingsSaveIndicator.classList.remove('hidden');
             debounceTimer = setTimeout(async () => {
@@ -699,14 +770,12 @@
                 const settingsToSave = {
                     title: menuTitleInput.value,
                     slogan: menuSloganInput.value,
-                    themeId: document.querySelector('.theme-button.selected')?.dataset.themeId || 'purple-wave',
-                    logoUrl: logoBase64.value
+                    themeId: document.querySelector('.theme-button.selected')?.dataset.themeId || 'purple-wave'
                 };
                 try {
-                     await setDoc(settingsDoc, settingsToSave, { merge: true });
+                    await setDoc(settingsDoc, settingsToSave, { merge: true });
                 } catch(e) {
-                    console.error("Error saving settings:", e);
-                    handleFirestoreError(e);
+                    handleFirebaseError(e, "guardar configuración");
                 } finally {
                     settingsSaveIndicator.classList.add('hidden');
                 }
@@ -716,14 +785,14 @@
         function initializeThemePanel() {
             domainDisplay.textContent = `${window.location.origin}${window.location.pathname}?menu=`;
             themePanel.innerHTML = themes.map(theme => `
-                <button class="theme-button p-2 border rounded-lg flex flex-col items-center" data-theme-id="${theme.id}" style="--theme-accent: ${theme.accent}">
+                <button class="theme-button p-1 border rounded-lg flex flex-col items-center justify-center" data-theme-id="${theme.id}" style="--theme-accent: ${theme.accent}">
                     <div class="flex space-x-1 mb-1">
-                        <div class="w-4 h-4 rounded-full" style="background-color: ${theme.bg}; border: 1px solid #ccc;"></div>
-                        <div class="w-4 h-4 rounded-full" style="background-color: ${theme.card}; border: 1px solid #ccc;"></div>
-                        <div class="w-4 h-4 rounded-full" style="background-color: ${theme.text};"></div>
-                        <div class="w-4 h-4 rounded-full" style="background-color: ${theme.accent};"></div>
+                        <div class="w-3 h-3 rounded-full" style="background-color: ${theme.bg}; border: 1px solid #ccc;"></div>
+                        <div class="w-3 h-3 rounded-full" style="background-color: ${theme.card}; border: 1px solid #ccc;"></div>
+                        <div class="w-3 h-3 rounded-full" style="background-color: ${theme.text};"></div>
+                        <div class="w-3 h-3 rounded-full" style="background-color: ${theme.accent};"></div>
                     </div>
-                    <span class="text-xs font-medium">${theme.name}</span>
+                    <span class="text-[10px] font-medium">${theme.name}</span>
                 </button>
             `).join('');
             
@@ -732,63 +801,56 @@
                 if (button) {
                     document.querySelectorAll('.theme-button').forEach(btn => btn.classList.remove('selected'));
                     button.classList.add('selected');
-                    saveSettings();
+                    saveSettingsDebounced();
                 }
             });
         }
         
-        function handleFirestoreError(error) {
-            console.error("Firestore Error:", error);
-            if (error.code === 'permission-denied' || error.code === 'failed-precondition') {
-                 permissionErrorOverlay.style.display = 'flex';
+        function handleFirebaseError(error, context) {
+            console.error(`Firebase Error (${context}):`, error);
+            let userMessage = `Ocurrió un error en: ${context}.`;
+            let detailedMessage = `Ocurrió un error en: ${context}. Revisa las reglas de seguridad en tu panel de Firebase.`;
+
+            if (error.code === 'storage/unauthorized') {
+                userMessage = `Permiso denegado para subir imagen.`;
+                detailedMessage = `Error de permisos en Storage. Asegúrate de que tus reglas de seguridad permitan la escritura para usuarios autenticados en la ruta 'users/${userId}/...'.`;
+                permissionErrorOverlay.style.display = 'flex';
+            } else if (error.code === 'permission-denied') {
+                userMessage = `Permiso denegado en la base de datos.`;
+                 detailedMessage = `Error de permisos en Firestore. Asegúrate de que tus reglas permitan leer/escribir en las colecciones dentro de 'users/${userId}/...'.`;
+                permissionErrorOverlay.style.display = 'flex';
             }
+            
+            permissionErrorMessage.textContent = detailedMessage;
+            showToast(userMessage, true);
         }
         
         // --- Category Management ---
-        categoryForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const categoryNameInput = document.getElementById('category-name');
-            const addCategoryBtn = document.getElementById('add-category-btn');
-            const categoryName = categoryNameInput.value.trim();
-
-            if (!categoryName || !categoriesCollection) return;
-
-            addCategoryBtn.disabled = true;
-            addCategoryBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-            try {
-                await addDoc(categoriesCollection, { name: categoryName, order: localCategories.length });
-                showToast('Categoría agregada exitosamente.');
-                categoryNameInput.value = '';
-            } catch (error) { 
-                console.error("Error adding category:", error); 
-                handleFirestoreError(error); 
-                showToast('No se pudo agregar la categoría.', true);
-            } finally {
-                addCategoryBtn.disabled = false;
-                addCategoryBtn.innerHTML = '<i class="fas fa-plus"></i>';
-            }
-        });
-
         function renderCategories(categories) {
-            categoryListDiv.innerHTML = categories.length === 0 ? '<p class="text-gray-500 text-sm">Añade tu primera categoría.</p>' : '';
-            const previousCategory = categorySelect.value;
-            categorySelect.innerHTML = '<option value="">Selecciona una categoría</option>';
+            let categoryListHTML = '';
+            let categorySelectHTML = '<option value="">Selecciona una categoría</option>';
             
-            categories.forEach(cat => {
-                categoryListDiv.innerHTML += `
-                    <div class="flex justify-between items-center bg-gray-100 p-2 rounded-md">
-                        <span class="text-sm font-medium">${cat.name}</span>
-                        <button data-id="${cat.id}" data-name="${cat.name}" class="delete-category-btn text-red-500 hover:text-red-700">&times;</button>
-                    </div>`;
-                const option = document.createElement('option');
-                option.value = cat.name;
-                option.textContent = cat.name;
-                categorySelect.add(option);
-            });
+            if (categories.length === 0) {
+                categoryListHTML = '<p class="text-gray-500 text-sm">Añade tu primera categoría.</p>';
+            } else {
+                categories.forEach(cat => {
+                    categoryListHTML += `
+                        <div class="flex justify-between items-center bg-gray-100 p-2 rounded-md">
+                            <span class="text-sm font-medium">${cat.name}</span>
+                            <button data-id="${cat.id}" data-name="${cat.name}" class="delete-category-btn text-red-500 hover:text-red-700">&times;</button>
+                        </div>`;
+                    categorySelectHTML += `<option value="${cat.name}">${cat.name}</option>`;
+                });
+            }
+
+            const previousCategory = categorySelect.value;
+            categoryListDiv.innerHTML = categoryListHTML;
+            categorySelect.innerHTML = categorySelectHTML;
+            
             if (categories.some(c => c.name === previousCategory)) {
                 categorySelect.value = previousCategory;
             }
+
             document.querySelectorAll('.delete-category-btn').forEach(btn => {
                 btn.onclick = () => openConfirmationModal(`¿Eliminar "${btn.dataset.name}"?`, 'Esta acción eliminará la categoría permanentemente.', () => deleteCategory(btn.dataset.id, btn.dataset.name));
             });
@@ -799,190 +861,135 @@
                 const q = query(menuItemsCollection, where("category", "==", name));
                 const querySnapshot = await getDocs(q);
                 if (!querySnapshot.empty) {
-                    showToast(`No se puede eliminar, "${name}" contiene platillos.`, true); 
+                    showToast(`No se puede eliminar, "${name}" contiene productos.`, true); 
                     return;
                 }
                 await deleteDoc(doc(categoriesCollection, id));
                 showToast('Categoría eliminada.');
             }
             catch (error) { 
-                console.error("Error deleting category:", error);
-                handleFirestoreError(error);
-                showToast('Error al eliminar categoría.', true);
+                handleFirebaseError(error, "eliminar categoría");
             }
         }
         
-        // --- Category Ordering ---
-        function renderCategoryOrderList(categories) {
-            categoryOrderList.innerHTML = '';
-            categories.forEach(cat => {
-                const li = document.createElement('li');
-                li.dataset.id = cat.id;
-                li.className = 'draggable bg-white p-3 rounded-md shadow-sm flex items-center justify-between';
-                li.draggable = true;
-                li.innerHTML = `<span>${cat.name}</span> <i class="fas fa-bars text-gray-400"></i>`;
-                categoryOrderList.appendChild(li);
-            });
-        }
-
-        let draggedItem = null;
-        categoryOrderList.addEventListener('dragstart', e => {
-            draggedItem = e.target;
-            setTimeout(() => e.target.classList.add('dragging'), 0);
-        });
-        
-        categoryOrderList.addEventListener('dragend', e => {
-            if (draggedItem) draggedItem.classList.remove('dragging');
-        });
-
-        categoryOrderList.addEventListener('dragover', e => {
-            e.preventDefault();
-            const afterElement = getDragAfterElement(categoryOrderList, e.clientY);
-            const currentDraggable = document.querySelector('.dragging');
-            if (currentDraggable) {
-                if (afterElement == null) {
-                    categoryOrderList.appendChild(currentDraggable);
-                } else {
-                    categoryOrderList.insertBefore(currentDraggable, afterElement);
-                }
-            }
-        });
-        
-        categoryOrderList.addEventListener('drop', e => {
-            e.preventDefault();
-            updateCategoryOrder();
-        });
-
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('.draggable:not(.dragging)')];
+        // --- Category and Product Ordering Logic ---
+        function getDragAfterElement(container, y, selector) {
+            const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
             return draggableElements.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
                 const offset = y - box.top - box.height / 2;
-                if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
-                else return closest;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
         
+        function renderCategoryOrderList(categories) {
+            if (!categoryOrderList) return;
+            let listHTML = '';
+            categories.forEach(cat => {
+                listHTML += `
+                    <li data-id="${cat.id}" class="draggable bg-white p-3 rounded-md shadow-sm flex items-center justify-between" draggable="true">
+                        <span>${cat.name}</span> <i class="fas fa-bars text-gray-400"></i>
+                    </li>`;
+            });
+            categoryOrderList.innerHTML = listHTML;
+        }
+
         async function updateCategoryOrder() {
-            const newOrderedIds = [...categoryOrderList.querySelectorAll('li')].map(li => li.dataset.id);
+            const newOrderedIds = [...categoryOrderList.querySelectorAll('li.draggable')].map(li => li.dataset.id);
             const batch = writeBatch(db);
             newOrderedIds.forEach((id, index) => {
                 const docRef = doc(categoriesCollection, id);
                 batch.update(docRef, { order: index });
             });
-            await batch.commit();
-        }
-
-        // --- Menu Item Management ---
-        menuItemForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtn = document.getElementById('submit-btn');
-
-            if (!categorySelect.value) { 
-                showToast('Por favor, selecciona una categoría.', true); 
-                return; 
-            }
-            
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
-
-            const itemData = {
-                name: document.getElementById('item-name').value,
-                description: document.getElementById('item-description').value,
-                price: parseFloat(document.getElementById('item-price').value),
-                currency: document.getElementById('item-currency').value,
-                category: categorySelect.value,
-                imageUrl: imageBase64.value
-            };
-            const id = editItemId.value;
             try {
-                if (id) { 
-                    await setDoc(doc(menuItemsCollection, id), itemData);
-                    showToast('Platillo actualizado exitosamente.');
-                } else { 
-                    await addDoc(menuItemsCollection, itemData);
-                    showToast('Platillo agregado exitosamente.');
-                }
-                resetForm();
-            } catch (error) { 
-                console.error("Error saving item:", error);
-                handleFirestoreError(error);
-                showToast('No se pudo guardar el platillo.', true);
-            } finally {
-                submitBtn.disabled = false;
-                // Text is reset in resetForm()
+                await batch.commit();
+            } catch(e) {
+                handleFirebaseError(e, "ordenar categorías");
             }
-        });
+        }
         
+        // --- Menu Item Management ---
         function resetForm() {
             menuItemForm.reset();
             imagePreview.classList.add('hidden');
             imageIcon.classList.remove('hidden');
             imageBase64.value = '';
             editItemId.value = '';
-            document.getElementById('form-title').textContent = 'Añadir Nuevo Platillo';
-            document.getElementById('submit-btn').innerHTML = 'Añadir Platillo';
+            currentImageUrlInput.value = '';
+            document.getElementById('form-title').textContent = 'Añadir Nuevo Producto';
+            document.getElementById('submit-btn').innerHTML = 'Añadir Producto';
             document.getElementById('cancel-edit-btn').classList.add('hidden');
         }
-        document.getElementById('cancel-edit-btn').addEventListener('click', resetForm);
 
         function handleEdit(item) {
             editItemId.value = item.id;
+            currentImageUrlInput.value = item.imageUrl || '';
             document.getElementById('item-name').value = item.name;
             document.getElementById('item-description').value = item.description;
             document.getElementById('item-price').value = item.price;
             document.getElementById('item-currency').value = item.currency;
             categorySelect.value = item.category;
-            imageBase64.value = item.imageUrl || '';
+            
+            imageBase64.value = ''; 
             imagePreview.src = item.imageUrl || '';
             imagePreview.classList.toggle('hidden', !item.imageUrl);
             imageIcon.classList.toggle('hidden', !!item.imageUrl);
-            document.getElementById('form-title').textContent = 'Editar Platillo';
-            document.getElementById('submit-btn').innerHTML = 'Actualizar Platillo';
+            
+            document.getElementById('form-title').textContent = 'Editar Producto';
+            document.getElementById('submit-btn').innerHTML = 'Actualizar Producto';
             document.getElementById('cancel-edit-btn').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
-        async function handleDeleteItem(id) {
-            try { 
+        async function handleDeleteItem(id, imageUrl) {
+            try {
                 await deleteDoc(doc(menuItemsCollection, id)); 
-                showToast('Platillo eliminado.');
+                
+                if (imageUrl) {
+                    const imageRef = storageRef(storage, imageUrl);
+                    await deleteObject(imageRef).catch(error => {
+                        console.warn("No se pudo borrar la imagen del storage (puede que ya no exista):", error);
+                    });
+                }
+                showToast('Producto eliminado.');
             }
             catch (error) { 
-                console.error("Error deleting item:", error);
-                handleFirestoreError(error);
-                showToast('Error al eliminar el platillo.', true);
+                handleFirebaseError(error, "eliminar producto");
             }
         }
         
         // --- UI Rendering ---
         function renderMenu(items, categories, isPublic = false) {
             const listToRender = isPublic ? publicMenuList : adminMenuList;
-            listToRender.innerHTML = '';
+            let menuHTML = '';
             
             if (categories.length === 0) {
-                 const emptyMsgAdmin = `<div class="text-center p-8 bg-white rounded-lg shadow col-span-full"><i class="fas fa-folder-open fa-2x text-gray-400 mb-2"></i><p>Tu menú está vacío. Empieza por añadir una categoría y luego un platillo.</p></div>`;
-                 const emptyMsgPublic = `<div class="text-center p-8 rounded-lg col-span-full" style="background-color: var(--card-bg); color: var(--text-color);"><i class="fas fa-folder-open fa-2x opacity-50 mb-2"></i><p>Este menú aún no tiene contenido.</p></div>`;
-                 listToRender.innerHTML = isPublic ? emptyMsgPublic : emptyMsgAdmin;
-                 return;
+                const emptyMsgAdmin = `<div class="text-center p-8 bg-white rounded-lg shadow col-span-full"><i class="fas fa-folder-open fa-2x text-gray-400 mb-2"></i><p>Tu catálogo está vacío. Empieza por añadir una categoría y luego un producto.</p></div>`;
+                const emptyMsgPublic = `<div class="text-center p-8 rounded-lg col-span-full" style="background-color: var(--card-bg); color: var(--text-color);"><i class="fas fa-folder-open fa-2x opacity-50 mb-2"></i><p>Este catálogo aún no tiene contenido.</p></div>`;
+                menuHTML = isPublic ? emptyMsgPublic : emptyMsgAdmin;
+            } else {
+                categories.forEach(category => {
+                    const itemsInCategory = items.filter(item => item.category === category.name);
+                    if (isPublic && !isLiveEditing && itemsInCategory.length === 0 && items.length > 0) return;
+                    
+                    const cardCreator = isPublic ? createPublicItemCard : createAdminItemCard;
+                    menuHTML += createCategorySection(category.name, itemsInCategory, cardCreator, isPublic ? "public" : "admin");
+                });
             }
 
-            const sortedCategories = [...categories].sort((a,b)=> a.order - b.order);
-
-            sortedCategories.forEach(category => {
-                const itemsInCategory = items.filter(item => item.category === category.name);
-                if (isPublic && itemsInCategory.length === 0) return;
-                
-                listToRender.innerHTML += createCategorySection(category.name, itemsInCategory, isPublic ? createPublicItemCard : createAdminItemCard, isPublic ? "public" : "admin");
-            });
+            listToRender.innerHTML = menuHTML;
 
             if (!isPublic) {
-                 document.querySelectorAll('.edit-btn').forEach(btn => {
+                document.querySelectorAll('.edit-btn').forEach(btn => {
                     const item = items.find(i => i.id === btn.dataset.id);
                     btn.onclick = () => handleEdit(item);
                 });
                 document.querySelectorAll('.delete-item-btn').forEach(btn => {
-                    btn.onclick = () => openConfirmationModal('¿Eliminar este platillo?', 'Esta acción no se puede deshacer.', () => handleDeleteItem(btn.dataset.id));
+                    btn.onclick = () => openConfirmationModal('¿Eliminar este producto?', 'Esta acción no se puede deshacer.', () => handleDeleteItem(btn.dataset.id, btn.dataset.imageUrl));
                 });
             }
         }
@@ -990,8 +997,10 @@
         function createCategorySection(name, items, cardCreator, type) {
             const titleClass = 'text-3xl font-bold mb-6 public-category-title';
             const adminTitleClass = 'text-2xl font-bold mb-4 pb-2 border-b-2';
-            const gridClass = type === 'admin' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6';
-            const itemsHtml = items.length > 0 ? items.map(cardCreator).join('') : (type === 'admin' ? '<p class="text-sm text-gray-500 col-span-full">Esta categoría no tiene platillos.</p>' : '');
+            const gridClass = type === 'admin' 
+                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' 
+                : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6';
+            const itemsHtml = items.length > 0 ? items.map(cardCreator).join('') : (type === 'admin' ? '<p class="text-sm text-gray-500 col-span-full">Esta categoría no tiene productos.</p>' : '');
             
             const titleStyle = type === 'public' 
                 ? `color: var(--header-text); border-bottom: 2px solid var(--accent-color);`
@@ -1000,35 +1009,38 @@
             return `
                 <div class="category-section mb-8">
                     <h3 class="${type === 'admin' ? adminTitleClass : titleClass}" style="${titleStyle}">${name}</h3>
-                    <div class="${gridClass}">${itemsHtml}</div>
+                    <div class="${gridClass} product-list-container p-2" data-category-name="${name}">${itemsHtml}</div>
                 </div>`;
         }
 
         const createItemCard = (template) => (item) => {
-            const priceFormatted = new Intl.NumberFormat('es-NI', { style: 'currency', currency: item.currency === 'C$' ? 'NIO' : 'USD' }).format(item.price);
+            const currencyCode = item.currency === 'C$' ? 'NIO' : 'USD';
+            const priceFormatted = new Intl.NumberFormat('es-NI', { style: 'currency', currency: currencyCode }).format(item.price);
             return template(item, priceFormatted);
         };
         
         const createAdminItemCard = createItemCard((item, price) => `
-            <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col transition hover:shadow-xl">
-                <img src="${item.imageUrl || 'https://placehold.co/400x400/e2e8f0/64748b?text=Sin+Imagen'}" alt="${item.name}" class="w-full aspect-square object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x400/e2e8f0/64748b?text=Error'">
-                <div class="p-4 flex-grow">
+            <div data-id="${item.id}" class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col transition hover:shadow-xl">
+                <img src="${item.imageUrl || 'https://placehold.co/400x400/e2e8f0/64748b?text=Sin+Imagen'}" alt="${item.name}" class="w-full aspect-square object-cover pointer-events-none" onerror="this.onerror=null;this.src='https://placehold.co/400x400/e2e8f0/64748b?text=Error'">
+                <div class="p-4 flex-grow pointer-events-none">
                     <h4 class="font-bold text-lg">${item.name}</h4>
                     <p class="text-gray-600 text-sm mb-2 h-10 overflow-hidden">${item.description || '&nbsp;'}</p>
                     <p class="font-semibold text-purple-600 text-lg">${price}</p>
                 </div>
                 <div class="bg-gray-50 p-2 flex justify-end space-x-2">
                     <button data-id="${item.id}" class="edit-btn bg-blue-100 text-blue-800 hover:bg-blue-200 font-semibold py-1 px-3 rounded-md text-sm transition"><i class="fas fa-pencil-alt mr-1"></i> Editar</button>
-                    <button data-id="${item.id}" class="delete-item-btn bg-red-100 text-red-800 hover:bg-red-200 font-semibold py-1 px-3 rounded-md text-sm transition"><i class="fas fa-trash-alt mr-1"></i> Eliminar</button>
+                    <button data-id="${item.id}" data-image-url="${item.imageUrl || ''}" class="delete-item-btn bg-red-100 text-red-800 hover:bg-red-200 font-semibold py-1 px-3 rounded-md text-sm transition"><i class="fas fa-trash-alt mr-1"></i> Eliminar</button>
                 </div>
             </div>`);
 
         const createPublicItemCard = createItemCard((item, price) => `
-            <div class="rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden backdrop-blur-sm" style="background-color: var(--card-bg, #ffffff); transform: perspective(1000px) rotateX(0deg);">
-                 <div class="w-full aspect-square overflow-hidden">
-                    <img src="${item.imageUrl || 'https://placehold.co/400x400/1f2937/f0abfc?text=Platillo'}" alt="${item.name}" class="w-full h-full object-cover transition-transform duration-300 hover:scale-110" onerror="this.onerror=null;this.src='https://placehold.co/400x400/1f2937/f0abfc?text=Error'">
+            <div data-id="${item.id}" 
+                 class="rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden backdrop-blur-sm" 
+                 style="background-color: var(--card-bg, #ffffff);">
+                <div class="w-full aspect-square overflow-hidden pointer-events-none">
+                    <img src="${item.imageUrl || 'https://placehold.co/400x400/1f2937/f0abfc?text=Producto'}" alt="${item.name}" class="w-full h-full object-cover transition-transform duration-300 hover:scale-110" onerror="this.onerror=null;this.src='https://placehold.co/400x400/1f2937/f0abfc?text=Error'">
                 </div>
-                <div class="p-4">
+                <div class="p-4 pointer-events-none">
                     <h4 class="text-xl font-bold" style="color: var(--text-color, #000000);">${item.name}</h4>
                     <p class="mt-1 mb-2 min-h-[2.5rem]" style="color: var(--text-color, #000000); opacity: 0.8;">${item.description || '&nbsp;'}</p>
                     <p class="text-xl font-bold public-price" style="color: var(--accent-color, #000000);">${price}</p>
@@ -1069,67 +1081,52 @@
             setTimeout(() => {
                 toast.classList.remove('show');
                 toast.addEventListener('transitionend', () => toast.remove());
-            }, 3000);
+            }, 4000);
         }
         
         // --- Utility and Publishing Functions ---
-        savePublicPathBtn.addEventListener('click', async () => {
-            const newPath = publicPathInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
-            publicPathInput.value = newPath;
-
-            if (!newPath) {
-                publicPathError.textContent = 'Por favor, introduce un nombre para la URL.';
+        async function checkPathAvailability(path, isInitialLoad = false) {
+            if (!path) {
+                publicPathStatus.textContent = '';
+                savePublicPathBtn.disabled = true;
                 return;
             }
-            publicPathError.textContent = '';
-            
+
+            publicPathStatus.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Comprobando...`;
+            publicPathStatus.className = 'text-sm text-gray-500';
             savePublicPathBtn.disabled = true;
-            savePublicPathBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Publicando...';
 
             try {
-                // First, check if the name is taken by someone else
-                const publicMenuRef = doc(db, "publicMenus", newPath);
+                const publicMenuRef = doc(db, "publishedMenus", path);
                 const docSnap = await getDoc(publicMenuRef);
+
                 if (docSnap.exists() && docSnap.data().userId !== userId) {
-                    publicPathError.textContent = 'Esta URL ya está en uso. Intenta con otra.';
-                    savePublicPathBtn.disabled = false;
-                    savePublicPathBtn.innerHTML = 'Publicar y Generar URL';
-                    return;
+                    publicPathStatus.textContent = 'URL no disponible.';
+                    publicPathStatus.className = 'text-sm text-red-600';
+                    savePublicPathBtn.disabled = true;
+                } else {
+                    publicPathStatus.textContent = '¡Disponible!';
+                    publicPathStatus.className = 'text-sm text-green-600';
+                    if (!isInitialLoad) {
+                       savePublicPathBtn.disabled = false;
+                    } else if(localSettings.publicPath === path) {
+                        savePublicPathBtn.disabled = true;
+                    } else {
+                         savePublicPathBtn.disabled = false;
+                    }
                 }
-
-                // Reserve the public path name
-                await setDoc(doc(db, "publicMenus", newPath), { userId });
-                // Save the path in the user's private settings
-                await setDoc(settingsDoc, { publicPath: newPath }, { merge: true });
-
-                // Create the public data object
-                const publicData = {
-                    settings: localSettings,
-                    categories: localCategories,
-                    items: localItems
-                };
-                
-                // Publish the data to the public collection
-                await setDoc(doc(db, "publishedMenus", newPath), publicData);
-
-                const url = `${window.location.origin}${window.location.pathname}?menu=${newPath}`;
-                publicUrlDisplay.value = url;
-                publicUrlDisplayContainer.classList.remove('hidden');
-                showToast('¡Menú publicado exitosamente!');
-            } catch (e) {
-                console.error("Error publishing menu:", e);
-                showToast('Hubo un error al publicar el menú.', true);
-                handleFirestoreError(e);
-            } finally {
-                 savePublicPathBtn.disabled = false;
-                 savePublicPathBtn.innerHTML = 'Publicar y Generar URL';
+            } catch (error) {
+                handleFirebaseError(error, "comprobar disponibilidad de URL");
+                publicPathStatus.textContent = 'Error al comprobar.';
+                publicPathStatus.className = 'text-sm text-red-600';
+                savePublicPathBtn.disabled = true;
             }
-        });
-        
+        }
+
         function copyToClipboard(elementId, successMessage) {
-             const input = document.getElementById(elementId);
-             input.select();
-             try {
+            const input = document.getElementById(elementId);
+            input.select();
+            try {
                 document.execCommand('copy');
                 showToast(successMessage);
             } catch (err) {
@@ -1137,17 +1134,9 @@
             }
         }
 
-        copyPublicUrlBtn.addEventListener('click', () => copyToClipboard('public-url-display', 'URL pública copiada!'));
-
-        modalConfirmBtn.addEventListener('click', () => {
-            if (actionToConfirm) actionToConfirm();
-            closeConfirmationModal();
-        });
-        modalCancelBtn.addEventListener('click', closeConfirmationModal);
-        confirmationModal.querySelector('.overlay').addEventListener('click', closeConfirmationModal);
-        
         // --- Initialization ---
         async function loadPublicMenu(publicPath) {
+            isLiveEditing = false;
             showView('loading-screen');
             try {
                 const menuDocRef = doc(db, "publishedMenus", publicPath);
@@ -1156,32 +1145,412 @@
                 if (menuDocSnap.exists()) {
                     const publicData = menuDocSnap.data();
                     applySettings(publicData.settings, true);
-                    renderMenu(publicData.items, publicData.categories, true);
+                    renderMenu(publicData.items || [], publicData.categories || [], true);
                     showView('public-menu-view');
                     document.getElementById('back-to-admin-btn').classList.add('hidden');
                 } else {
-                    document.getElementById('loading-screen').innerHTML = '<p class="text-2xl text-red-500">Menú no encontrado</p>';
+                    document.getElementById('loading-screen').innerHTML = '<p class="text-2xl text-red-500">Catálogo no encontrado</p>';
                 }
             } catch (e) {
-                console.error("Error loading public menu:", e);
-                document.getElementById('loading-screen').innerHTML = '<p class="text-2xl text-red-500">Error al cargar el menú</p>';
-                handleFirestoreError(e);
+                handleFirebaseError(e, "cargar catálogo público");
+                document.getElementById('loading-screen').innerHTML = '<p class="text-2xl text-red-500">Error al cargar el catálogo</p>';
             }
         }
 
+        function initializeAppLogic() {
+            // Assign DOM elements to variables
+            allViews = ['auth-screen', 'admin-panel', 'settings-panel', 'public-menu-view', 'loading-screen'];
+            permissionErrorOverlay = document.getElementById('permission-error-overlay');
+            permissionErrorMessage = document.getElementById('permission-error-message');
+            loginForm = document.getElementById('login-form');
+            signupForm = document.getElementById('signup-form');
+            showSignupBtn = document.getElementById('show-signup');
+            showLoginBtn = document.getElementById('show-login');
+            welcomeMessage = document.getElementById('welcome-message');
+            logoutBtn = document.getElementById('logout-btn');
+            goToSettingsBtn = document.getElementById('go-to-settings-btn');
+            backToAdminFromSettingsBtn = document.getElementById('back-to-admin-from-settings-btn');
+            viewPublicMenuBtn = document.getElementById('view-public-menu-btn');
+            backToAdminBtn = document.getElementById('back-to-admin-btn');
+            itemFormFieldset = document.getElementById('item-form-fieldset');
+            formInitMessage = document.getElementById('form-init-message');
+            menuItemForm = document.getElementById('menu-item-form');
+            categoryForm = document.getElementById('category-form');
+            categoryListDiv = document.getElementById('category-list');
+            categoryOrderList = document.getElementById('category-order-list');
+            categorySelect = document.getElementById('item-category-select');
+            imageInput = document.getElementById('item-image');
+            imagePreview = document.getElementById('image-preview');
+            imageIcon = document.getElementById('image-icon');
+            imageBase64 = document.getElementById('image-base64');
+            currentImageUrlInput = document.getElementById('current-image-url');
+            editItemId = document.getElementById('edit-item-id');
+            adminMenuList = document.getElementById('admin-menu-list');
+            publicMenuList = document.getElementById('public-menu-list');
+            confirmationModal = document.getElementById('confirmation-modal');
+            modalTitle = document.getElementById('modal-title');
+            modalMessage = document.getElementById('modal-message');
+            modalConfirmBtn = document.getElementById('modal-confirm-btn');
+            modalCancelBtn = document.getElementById('modal-cancel-btn');
+            menuTitleInput = document.getElementById('menu-title-input-settings');
+            menuSloganInput = document.getElementById('menu-slogan-input-settings');
+            themePanel = document.getElementById('theme-panel');
+            publicTitle = document.getElementById('public-title');
+            publicSlogan = document.getElementById('public-slogan');
+            publicMenuContainer = document.getElementById('public-menu-container');
+            publicHeader = document.getElementById('public-header');
+            logoImageInput = document.getElementById('logo-image-input');
+            logoPreview = document.getElementById('logo-preview');
+            publicLogo = document.getElementById('public-logo');
+            logoUploadText = document.getElementById('logo-upload-text');
+            logoUploadSpinner = document.getElementById('logo-upload-spinner');
+            settingsSaveIndicator = document.getElementById('settings-save-indicator');
+            domainDisplay = document.getElementById('domain-display');
+            publicPathInput = document.getElementById('public-path-input');
+            publicPathStatus = document.getElementById('public-path-status');
+            savePublicPathBtn = document.getElementById('save-public-path-btn');
+            publicUrlDisplayContainer = document.getElementById('public-url-display-container');
+            publicUrlDisplay = document.getElementById('public-url-display');
+            copyPublicUrlBtn = document.getElementById('copy-public-url-btn');
+            qrCodeContainer = document.getElementById('qr-code-container');
+            qrcodeCanvas = document.getElementById('qrcode-canvas');
+            downloadQrBtn = document.getElementById('download-qr-btn');
 
-        window.onload = async () => {
-            initializeThemePanel();
-            const urlParams = new URLSearchParams(window.location.search);
-            const publicMenuPath = urlParams.get('menu');
-
-            if (publicMenuPath) {
-                await loadPublicMenu(publicMenuPath);
-            } else {
-                await attemptInitialLogin();
+            // Remember me functionality
+            const rememberedEmail = localStorage.getItem('rememberedEmail');
+            if (rememberedEmail) {
+                document.getElementById('login-email').value = rememberedEmail;
+                document.getElementById('remember-me').checked = true;
             }
-        };
+
+            // Attach Event Listeners
+            if (showSignupBtn) showSignupBtn.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(); });
+            if (showLoginBtn) showLoginBtn.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(); });
+            if (loginForm) loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                const rememberMe = document.getElementById('remember-me').checked;
+
+                if (rememberMe) {
+                    localStorage.setItem('rememberedEmail', email);
+                } else {
+                    localStorage.removeItem('rememberedEmail');
+                }
+
+                signInWithEmailAndPassword(auth, email, password)
+                    .catch(error => { 
+                        console.error("Login Error Code:", error.code, error.message);
+                        document.getElementById('login-error').textContent = getAuthErrorMessage(error.code);
+                    });
+            });
+
+            if (signupForm) signupForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                const signupCode = document.getElementById('signup-code').value;
+                const signupError = document.getElementById('signup-error');
+
+                if (signupCode !== 'Team2@99') {
+                    signupError.textContent = 'Código de autenticación incorrecto.';
+                    return;
+                }
+
+                signupError.textContent = ''; // Clear previous errors
+
+                createUserWithEmailAndPassword(auth, email, password)
+                    .catch(error => { 
+                        console.error("Signup Error Code:", error.code, error.message);
+                        signupError.textContent = getAuthErrorMessage(error.code); 
+                    });
+            });
+
+            if(logoutBtn) logoutBtn.addEventListener('click', () => signOut(auth));
+            if(goToSettingsBtn) goToSettingsBtn.addEventListener('click', () => showView('settings-panel'));
+            
+            if(viewPublicMenuBtn) viewPublicMenuBtn.addEventListener('click', () => {
+                isLiveEditing = true;
+                applySettings(localSettings, true);
+                renderMenu(localItems, localCategories, true);
+                showView('public-menu-view');
+                backToAdminBtn.classList.remove('hidden');
+            });
+
+            if(backToAdminBtn) backToAdminBtn.addEventListener('click', () => {
+                isLiveEditing = false;
+                showView('admin-panel');
+            });
+            
+            if(backToAdminFromSettingsBtn) backToAdminFromSettingsBtn.addEventListener('click', () => showView('admin-panel'));
+            
+            if(imageInput) imageInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file || !file.type.startsWith('image/')) return;
+                
+                if (file.size > 5 * 1024 * 1024) { 
+                    showToast('La imagen es demasiado grande (máx 5MB).', true);
+                    return;
+                }
+
+                try {
+                    const resizedDataUrl = await resizeImage(file, 800, 800, 0.8);
+                    imageBase64.value = resizedDataUrl;
+                    imagePreview.src = resizedDataUrl;
+                    imagePreview.classList.remove('hidden');
+                    imageIcon.classList.add('hidden');
+                } catch (error) {
+                    console.error("Error resizing image:", error);
+                    showToast("Hubo un problema al procesar la imagen.", true);
+                }
+            });
+
+            if(logoImageInput) logoImageInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                logoUploadText.classList.add('hidden');
+                logoUploadSpinner.classList.remove('hidden');
+
+                try {
+                    const resizedDataUrl = await resizeImage(file, 200, 200, 0.9);
+                    
+                    const sRef = storageRef(storage, `users/${userId}/images/logo.jpg`);
+                    const uploadResult = await uploadString(sRef, resizedDataUrl, 'data_url');
+                    const downloadUrl = await getDownloadURL(uploadResult.ref);
+
+                    await setDoc(settingsDoc, { logoUrl: downloadUrl }, { merge: true });
+                    showToast('Logotipo actualizado.');
+                } catch (error) {
+                    handleFirebaseError(error, "actualizar logo");
+                } finally {
+                    logoUploadText.classList.remove('hidden');
+                    logoUploadSpinner.classList.add('hidden');
+                }
+            });
+
+            if(menuTitleInput) menuTitleInput.addEventListener('input', () => saveSettingsDebounced());
+            if(menuSloganInput) menuSloganInput.addEventListener('input', () => saveSettingsDebounced());
+            
+            if(categoryForm) categoryForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const categoryNameInput = document.getElementById('category-name');
+                const addCategoryBtn = document.getElementById('add-category-btn');
+                const categoryName = categoryNameInput.value.trim();
+
+                if (!categoryName || !categoriesCollection) return;
+
+                addCategoryBtn.disabled = true;
+                addCategoryBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                try {
+                    await addDoc(categoriesCollection, { name: categoryName, order: localCategories.length });
+                    showToast('Categoría agregada exitosamente.');
+                    categoryNameInput.value = '';
+                } catch (error) { 
+                    handleFirebaseError(error, "agregar categoría");
+                } finally {
+                    addCategoryBtn.disabled = false;
+                    addCategoryBtn.innerHTML = '<i class="fas fa-plus"></i>';
+                }
+            });
+            
+            if(categoryOrderList) {
+                let draggedItem = null;
+                categoryOrderList.addEventListener('dragstart', e => {
+                    if (e.target.classList.contains('draggable')) {
+                        draggedItem = e.target;
+                        setTimeout(() => e.target.classList.add('dragging'), 0);
+                    }
+                });
+                
+                categoryOrderList.addEventListener('dragend', e => {
+                    if (draggedItem) {
+                        draggedItem.classList.remove('dragging');
+                        draggedItem = null;
+                    }
+                });
+
+                categoryOrderList.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    if (!draggedItem) return;
+                    const afterElement = getDragAfterElement(categoryOrderList, e.clientY, '.draggable');
+                    if (afterElement == null) {
+                        categoryOrderList.appendChild(draggedItem);
+                    } else {
+                        categoryOrderList.insertBefore(draggedItem, afterElement);
+                    }
+                });
+                
+                categoryOrderList.addEventListener('drop', e => {
+                    e.preventDefault();
+                    updateCategoryOrder();
+                });
+            }
+
+            if(menuItemForm) menuItemForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = document.getElementById('submit-btn');
+
+                if (!categorySelect.value) { 
+                    showToast('Por favor, selecciona una categoría.', true); 
+                    return; 
+                }
+                
+                const originalButtonHTML = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+
+                const id = editItemId.value;
+                const imageBase64Value = imageBase64.value;
+                let finalImageUrl = currentImageUrlInput.value;
+                let success = false;
+
+                try {
+                    const docId = id || doc(collection(db, '_')).id;
+                    
+                    if (imageBase64Value) {
+                        const sRef = storageRef(storage, `users/${userId}/images/${docId}.jpg`);
+                        const uploadResult = await uploadString(sRef, imageBase64Value, 'data_url');
+                        finalImageUrl = await getDownloadURL(uploadResult.ref);
+                    }
+                    
+                    const itemData = {
+                        name: document.getElementById('item-name').value,
+                        description: document.getElementById('item-description').value,
+                        price: parseFloat(document.getElementById('item-price').value),
+                        currency: document.getElementById('item-currency').value,
+                        category: categorySelect.value,
+                        imageUrl: finalImageUrl,
+                        isFeatured: document.getElementById('item-featured').checked,
+                        isAvailable: document.getElementById('item-available').checked,
+                        order: 0 // Will be overwritten if not new
+                    };
+                    
+                    if (id) {
+                        const existingItem = localItems.find(item => item.id === id);
+                        itemData.order = existingItem ? existingItem.order : 0;
+                    } else {
+                        const itemsInCategory = localItems.filter(item => item.category === itemData.category);
+                        itemData.order = itemsInCategory.length;
+                    }
+                    
+                    const docRef = id ? doc(menuItemsCollection, id) : doc(menuItemsCollection, docId);
+                    await setDoc(docRef, itemData);
+
+                    success = true;
+                    showToast(id ? 'Producto actualizado exitosamente.' : 'Producto agregado exitosamente.');
+                
+                } catch (error) { 
+                    handleFirebaseError(error, "guardar producto");
+                } finally {
+                    submitBtn.disabled = false;
+                    if (success) {
+                        resetForm();
+                    } else {
+                        submitBtn.innerHTML = originalButtonHTML;
+                    }
+                }
+            });
+            
+            if(document.getElementById('cancel-edit-btn')) document.getElementById('cancel-edit-btn').addEventListener('click', resetForm);
+
+            if(publicPathInput) {
+                publicPathInput.addEventListener('input', () => {
+                    const sanitizedPath = publicPathInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+                    if (publicPathInput.value !== sanitizedPath) {
+                        publicPathInput.value = sanitizedPath;
+                    }
+
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        if (sanitizedPath !== localSettings.publicPath) {
+                            checkPathAvailability(sanitizedPath);
+                        } else {
+                             publicPathStatus.textContent = '';
+                             savePublicPathBtn.disabled = true;
+                        }
+                    }, 500);
+                });
+            }
+
+            if(savePublicPathBtn) savePublicPathBtn.addEventListener('click', async () => {
+                const newPath = publicPathInput.value;
+                
+                savePublicPathBtn.disabled = true;
+                savePublicPathBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Publicando...';
+
+                try {
+                    const publicMenuRef = doc(db, "publishedMenus", newPath);
+                    const batch = writeBatch(db);
+
+                    batch.set(settingsDoc, { publicPath: newPath }, { merge: true });
+
+                    const publicData = {
+                        userId: userId, 
+                        settings: localSettings,
+                        categories: localCategories,
+                        items: localItems
+                    };
+                    batch.set(publicMenuRef, publicData);
+                    
+                    await batch.commit();
+
+                    const url = `${window.location.origin}${window.location.pathname}?menu=${newPath}`;
+                    publicUrlDisplay.value = url;
+                    publicUrlDisplayContainer.classList.remove('hidden');
+                    generateQRCode(url);
+                    showToast('¡Catálogo publicado exitosamente!');
+                    publicPathStatus.textContent = '¡Publicado!';
+                    publicPathStatus.className = 'text-sm text-green-600';
+
+                } catch (e) {
+                    handleFirebaseError(e, "publicar catálogo");
+                } finally {
+                    savePublicPathBtn.innerHTML = 'Publicar y Generar URL';
+                }
+            });
+            
+            if(copyPublicUrlBtn) copyPublicUrlBtn.addEventListener('click', () => copyToClipboard('public-url-display', 'URL pública copiada!'));
+            if(modalConfirmBtn) modalConfirmBtn.addEventListener('click', () => {
+                if (actionToConfirm) actionToConfirm();
+                closeConfirmationModal();
+            });
+            if(modalCancelBtn) modalCancelBtn.addEventListener('click', closeConfirmationModal);
+            if(confirmationModal) confirmationModal.querySelector('.overlay').addEventListener('click', closeConfirmationModal);
+
+            if(downloadQrBtn) downloadQrBtn.addEventListener('click', () => {
+                if(qrcodeCanvas) {
+                    const link = document.createElement('a');
+                    link.download = 'codigo-qr-menu.png';
+                    link.href = qrcodeCanvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+                    link.click();
+                }
+            });
+        }
+        
+        function generateQRCode(url) {
+            qrCodeContainer.classList.remove('hidden');
+            qrCodeContainer.classList.add('flex');
+            QRCode.toCanvas(qrcodeCanvas, url, { width: 190, margin: 1 }, function (error) {
+                if (error) console.error(error)
+            })
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+             initializeAppLogic();
+             initializeThemePanel();
+             const urlParams = new URLSearchParams(window.location.search);
+             const publicMenuPath = urlParams.get('menu');
+
+             if (publicMenuPath) {
+                 loadPublicMenu(publicMenuPath);
+             } else {
+                 showView('loading-screen');
+             }
+        });
 
     </script>
 </body>
 </html>
+
