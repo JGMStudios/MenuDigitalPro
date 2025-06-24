@@ -65,11 +65,6 @@
             opacity: 0.5;
             transform: scale(0.98);
         }
-        .category-drag-over {
-            background-color: #eef2ff; /* A light indigo background */
-            outline: 2px dashed #6366f1;
-            border-radius: 0.5rem;
-        }
         /* Toast notification styles */
         .toast {
             transition: all 0.5s ease-in-out;
@@ -104,57 +99,6 @@
             50% {
                 transform: scale(1.1);
             }
-        }
-
-        /* Toggle Switch styles */
-        .toggle-label {
-            transition: background-color .2s ease-in-out;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #4f46e5;
-        }
-        .toggle-checkbox:checked + .toggle-label .toggle-dot {
-            transform: translateX(100%);
-        }
-        .toggle-dot {
-            transition: transform .2s ease-in-out;
-        }
-        .featured-ribbon {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            width: 60px;
-            height: 60px;
-            overflow: hidden;
-        }
-        .featured-ribbon::before, .featured-ribbon::after {
-            content: '';
-            position: absolute;
-            z-index: -1;
-            border: 5px solid transparent;
-        }
-        .featured-ribbon::before {
-            top: 0;
-            left: 0;
-        }
-        .featured-ribbon::after {
-            bottom: 0;
-            right: 0;
-        }
-        .featured-ribbon span {
-            position: absolute;
-            display: block;
-            width: 85px;
-            padding: 5px 0;
-            background-color: var(--accent-color, #fbbf24);
-            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
-            color: #fff;
-            font: bold 12px/1 'Inter', sans-serif;
-            text-shadow: 0 1px 1px rgba(0,0,0,0.2);
-            text-align: center;
-            right: -17px;
-            top: 15px;
-            transform: rotate(45deg);
         }
     </style>
 </head>
@@ -211,14 +155,8 @@
                         <input type="email" id="login-email" placeholder="Correo electrónico" required autocomplete="email" class="w-full px-4 py-3 bg-gray-700/50 border border-amber-300/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400">
                         <input type="password" id="login-password" placeholder="Contraseña" required autocomplete="current-password" class="w-full px-4 py-3 bg-gray-700/50 border border-amber-300/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400">
                     </div>
-                    <div class="flex items-center justify-between mt-4">
-                        <label class="flex items-center text-sm text-gray-400 cursor-pointer">
-                            <input type="checkbox" id="remember-me" class="form-checkbox h-4 w-4 text-amber-500 bg-gray-700 border-amber-300/30 rounded focus:ring-amber-400">
-                            <span class="ml-2">Recordar correo</span>
-                        </label>
-                    </div>
                     <p id="login-error" class="text-red-500 text-sm text-center h-4 my-2"></p>
-                    <button type="submit" class="w-full mt-2 bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-4 rounded-lg transition">Ingresar</button>
+                    <button type="submit" class="w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-4 rounded-lg transition">Ingresar</button>
                     <p class="text-center text-sm mt-6">
                         ¿No tienes cuenta? <a href="#" id="show-signup" class="font-medium text-amber-300 hover:text-amber-200">Crea una aquí</a>
                     </p>
@@ -270,16 +208,7 @@
             </header>
 
             <main class="p-4 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 flex-grow">
-                <div class="lg:col-span-1 space-y-8">
-                    <div class="bg-white p-6 rounded-xl shadow-lg sticky top-24">
-                        <h2 class="text-xl font-bold mb-4">Administrar Categorías</h2>
-                        <form id="category-form" class="flex space-x-2 mb-4">
-                            <input type="text" id="category-name" placeholder="Nueva categoría" required class="flex-grow mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
-                            <button type="submit" id="add-category-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mt-1"><i class="fas fa-plus"></i></button>
-                        </form>
-                        <div id="category-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
-                    </div>
-
+                <div class="lg:col-span-1 space-y-6">
                     <div class="bg-white p-6 rounded-xl shadow-lg">
                         <h2 id="form-title" class="text-xl font-bold mb-4">Añadir Nuevo Producto</h2>
                         <form id="menu-item-form" class="space-y-4">
@@ -326,7 +255,7 @@
                                                     <input id="item-image" name="item-image" type="file" class="sr-only" accept="image/*">
                                                 </label>
                                             </div>
-                                            <p class="text-xs text-gray-500">PNG, JPG, GIF hasta 5MB</p>
+                                            <p class="text-xs text-gray-500">PNG, JPG, GIF hasta 5MB (se optimizará a ~100KB)</p>
                                         </div>
                                     </div>
                                     <input type="hidden" id="image-base64">
@@ -448,10 +377,16 @@
                 </div>
 
                 <div class="bg-white p-6 rounded-xl shadow-lg">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Ordenar Categorías</h3>
-                    <p class="text-sm text-gray-500 mb-4">Arrastra y suelta las categorías para cambiar su orden en el catálogo público.</p>
-                    <ul id="category-order-list" class="space-y-2">
-                    </ul>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Administrar y Ordenar Categorías</h3>
+                     <p class="text-sm text-gray-500 mb-4">Arrastra para cambiar el orden. Usa la (X) para eliminar una categoría.</p>
+                     <div class="space-y-4">
+                        <form id="category-form" class="flex space-x-2">
+                            <input type="text" id="category-name" placeholder="Nueva categoría" required class="flex-grow mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                            <button type="submit" id="add-category-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mt-1"><i class="fas fa-plus"></i></button>
+                        </form>
+                        <ul id="category-order-list" class="space-y-2">
+                        </ul>
+                    </div>
                 </div>
             </main>
             <footer class="text-center p-4 text-gray-500 text-sm">
@@ -475,7 +410,7 @@
                         <i class="fas fa-arrow-left mr-2"></i>Volver
                     </button>
                 </header>
-                <div id="public-menu-list" class="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
+                <div id="public-menu-list" class="p-4 md:p-8 max-w-full mx-auto space-y-8">
                 </div>
             </div>
             <!-- Footer removed from public view -->
@@ -549,7 +484,7 @@
         // --- DOM Element Variables ---
         let allViews, permissionErrorOverlay, loginForm, signupForm, showSignupBtn, showLoginBtn, welcomeMessage, logoutBtn,
             goToSettingsBtn, backToAdminFromSettingsBtn, viewPublicMenuBtn, backToAdminBtn, 
-            itemFormFieldset, formInitMessage, menuItemForm, categoryForm, categoryListDiv, 
+            itemFormFieldset, formInitMessage, menuItemForm, categoryForm,
             categoryOrderList, categorySelect, imageInput, imagePreview, imageIcon, 
             imageBase64, currentImageUrlInput, editItemId, adminMenuList, publicMenuList, 
             confirmationModal, modalTitle, modalMessage, modalConfirmBtn, modalCancelBtn, 
@@ -650,7 +585,7 @@
         }
 
         // --- Image Logic ---
-        function resizeImage(file, maxWidth, maxHeight, quality) {
+        function resizeImage(file, maxWidth, maxHeight, targetSizeKB) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
@@ -659,18 +594,33 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
                         let { width, height } = img;
 
                         if (width > height) {
-                            if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
+                            if (width > maxWidth) {
+                                height *= maxWidth / width;
+                                width = maxWidth;
+                            }
                         } else {
-                            if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
+                            if (height > maxHeight) {
+                                width *= maxHeight / height;
+                                height = maxHeight;
+                            }
                         }
                         canvas.width = width;
                         canvas.height = height;
-                        const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', quality));
+                        
+                        let quality = 0.9;
+                        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        const targetBase64Length = targetSizeKB * 1024 * 4 / 3;
+
+                        while (dataUrl.length > targetBase64Length && quality > 0.1) {
+                            quality -= 0.1;
+                            dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        }
+                        resolve(dataUrl);
                     };
                     img.onerror = (error) => reject(new Error("No se pudo cargar la imagen para procesarla."));
                 };
@@ -827,52 +777,43 @@
         
         // --- Category Management ---
         function renderCategories(categories) {
-            let categoryListHTML = '';
             let categorySelectHTML = '<option value="">Selecciona una categoría</option>';
             
-            if (categories.length === 0) {
-                categoryListHTML = '<p class="text-gray-500 text-sm">Añade tu primera categoría.</p>';
-            } else {
-                categories.forEach(cat => {
-                    categoryListHTML += `
-                        <div class="flex justify-between items-center bg-gray-100 p-2 rounded-md">
-                            <span class="text-sm font-medium">${cat.name}</span>
-                            <button data-id="${cat.id}" data-name="${cat.name}" class="delete-category-btn text-red-500 hover:text-red-700">&times;</button>
-                        </div>`;
-                    categorySelectHTML += `<option value="${cat.name}">${cat.name}</option>`;
-                });
-            }
+            categories.forEach(cat => {
+                categorySelectHTML += `<option value="${cat.name}">${cat.name}</option>`;
+            });
 
             const previousCategory = categorySelect.value;
-            categoryListDiv.innerHTML = categoryListHTML;
             categorySelect.innerHTML = categorySelectHTML;
             
             if (categories.some(c => c.name === previousCategory)) {
                 categorySelect.value = previousCategory;
             }
-
-            document.querySelectorAll('.delete-category-btn').forEach(btn => {
-                btn.onclick = () => openConfirmationModal(`¿Eliminar "${btn.dataset.name}"?`, 'Esta acción eliminará la categoría permanentemente.', () => deleteCategory(btn.dataset.id, btn.dataset.name));
-            });
         }
         
         async function deleteCategory(id, name) {
             try {
+                const batch = writeBatch(db);
                 const q = query(menuItemsCollection, where("category", "==", name));
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    showToast(`No se puede eliminar, "${name}" contiene productos.`, true); 
-                    return;
-                }
-                await deleteDoc(doc(categoriesCollection, id));
-                showToast('Categoría eliminada.');
+                const productsSnapshot = await getDocs(q);
+                
+                productsSnapshot.forEach(productDoc => {
+                    const productRef = doc(menuItemsCollection, productDoc.id);
+                    batch.update(productRef, { category: "" });
+                });
+
+                const categoryRef = doc(categoriesCollection, id);
+                batch.delete(categoryRef);
+
+                await batch.commit();
+                showToast(`Categoría "${name}" eliminada.`);
             }
             catch (error) { 
                 handleFirebaseError(error, "eliminar categoría");
             }
         }
         
-        // --- Category and Product Ordering Logic ---
+        // --- Category Ordering Logic ---
         function getDragAfterElement(container, y, selector) {
             const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
             return draggableElements.reduce((closest, child) => {
@@ -892,10 +833,18 @@
             categories.forEach(cat => {
                 listHTML += `
                     <li data-id="${cat.id}" class="draggable bg-white p-3 rounded-md shadow-sm flex items-center justify-between" draggable="true">
-                        <span>${cat.name}</span> <i class="fas fa-bars text-gray-400"></i>
+                        <div class="flex items-center">
+                            <i class="fas fa-bars text-gray-400 mr-3 cursor-move"></i>
+                            <span>${cat.name}</span>
+                        </div>
+                        <button data-id="${cat.id}" data-name="${cat.name}" class="delete-category-btn-settings text-red-500 hover:text-red-700 text-lg">&times;</button>
                     </li>`;
             });
             categoryOrderList.innerHTML = listHTML;
+            
+            document.querySelectorAll('.delete-category-btn-settings').forEach(btn => {
+                btn.onclick = () => openConfirmationModal(`¿Eliminar "${btn.dataset.name}"?`, 'Los productos de esta categoría se quedarán sin categoría. ¿Continuar?', () => deleteCategory(btn.dataset.id, btn.dataset.name));
+            });
         }
 
         async function updateCategoryOrder() {
@@ -998,8 +947,8 @@
             const titleClass = 'text-3xl font-bold mb-6 public-category-title';
             const adminTitleClass = 'text-2xl font-bold mb-4 pb-2 border-b-2';
             const gridClass = type === 'admin' 
-                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' 
-                : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6';
+                ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'
+                : 'grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8 gap-4';
             const itemsHtml = items.length > 0 ? items.map(cardCreator).join('') : (type === 'admin' ? '<p class="text-sm text-gray-500 col-span-full">Esta categoría no tiene productos.</p>' : '');
             
             const titleStyle = type === 'public' 
@@ -1028,22 +977,28 @@
                     <p class="font-semibold text-purple-600 text-lg">${price}</p>
                 </div>
                 <div class="bg-gray-50 p-2 flex justify-end space-x-2">
-                    <button data-id="${item.id}" class="edit-btn bg-blue-100 text-blue-800 hover:bg-blue-200 font-semibold py-1 px-3 rounded-md text-sm transition"><i class="fas fa-pencil-alt mr-1"></i> Editar</button>
-                    <button data-id="${item.id}" data-image-url="${item.imageUrl || ''}" class="delete-item-btn bg-red-100 text-red-800 hover:bg-red-200 font-semibold py-1 px-3 rounded-md text-sm transition"><i class="fas fa-trash-alt mr-1"></i> Eliminar</button>
+                    <button data-id="${item.id}" class="edit-btn bg-blue-100 text-blue-800 hover:bg-blue-200 h-8 w-8 rounded-full flex items-center justify-center transition relative group">
+                        <i class="fas fa-pencil-alt"></i>
+                        <span class="absolute bottom-full mb-2 w-max hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">Editar</span>
+                    </button>
+                    <button data-id="${item.id}" data-image-url="${item.imageUrl || ''}" class="delete-item-btn bg-red-100 text-red-800 hover:bg-red-200 h-8 w-8 rounded-full flex items-center justify-center transition relative group">
+                        <i class="fas fa-trash-alt"></i>
+                        <span class="absolute bottom-full mb-2 w-max hidden group-hover:block bg-gray-700 text-white text-xs rounded py-1 px-2">Eliminar</span>
+                    </button>
                 </div>
             </div>`);
 
         const createPublicItemCard = createItemCard((item, price) => `
             <div data-id="${item.id}" 
-                 class="rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden backdrop-blur-sm" 
+                 class="rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden backdrop-blur-sm" 
                  style="background-color: var(--card-bg, #ffffff);">
                 <div class="w-full aspect-square overflow-hidden pointer-events-none">
-                    <img src="${item.imageUrl || 'https://placehold.co/400x400/1f2937/f0abfc?text=Producto'}" alt="${item.name}" class="w-full h-full object-cover transition-transform duration-300 hover:scale-110" onerror="this.onerror=null;this.src='https://placehold.co/400x400/1f2937/f0abfc?text=Error'">
+                    <img src="${item.imageUrl || 'https://placehold.co/400x400/1f2937/f0abfc?text=Producto'}" alt="${item.name}" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" onerror="this.onerror=null;this.src='https://placehold.co/400x400/1f2937/f0abfc?text=Error'">
                 </div>
-                <div class="p-4 pointer-events-none">
-                    <h4 class="text-xl font-bold" style="color: var(--text-color, #000000);">${item.name}</h4>
-                    <p class="mt-1 mb-2 min-h-[2.5rem]" style="color: var(--text-color, #000000); opacity: 0.8;">${item.description || '&nbsp;'}</p>
-                    <p class="text-xl font-bold public-price" style="color: var(--accent-color, #000000);">${price}</p>
+                <div class="p-2 text-center pointer-events-none">
+                    <h4 class="text-sm font-semibold truncate" style="color: var(--text-color, #000000);">${item.name}</h4>
+                    <p class="text-xs truncate" style="color: var(--text-color, #000000); opacity: 0.7; min-height: 1.25rem;">${item.description || '&nbsp;'}</p>
+                    <p class="text-lg font-bold public-price" style="color: var(--accent-color, #000000);">${price}</p>
                 </div>
             </div>`);
         
@@ -1171,7 +1126,6 @@
             formInitMessage = document.getElementById('form-init-message');
             menuItemForm = document.getElementById('menu-item-form');
             categoryForm = document.getElementById('category-form');
-            categoryListDiv = document.getElementById('category-list');
             categoryOrderList = document.getElementById('category-order-list');
             categorySelect = document.getElementById('item-category-select');
             imageInput = document.getElementById('item-image');
@@ -1211,13 +1165,6 @@
             qrcodeCanvas = document.getElementById('qrcode-canvas');
             downloadQrBtn = document.getElementById('download-qr-btn');
 
-            // Remember me functionality
-            const rememberedEmail = localStorage.getItem('rememberedEmail');
-            if (rememberedEmail) {
-                document.getElementById('login-email').value = rememberedEmail;
-                document.getElementById('remember-me').checked = true;
-            }
-
             // Attach Event Listeners
             if (showSignupBtn) showSignupBtn.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(); });
             if (showLoginBtn) showLoginBtn.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(); });
@@ -1225,14 +1172,7 @@
                 e.preventDefault();
                 const email = document.getElementById('login-email').value;
                 const password = document.getElementById('login-password').value;
-                const rememberMe = document.getElementById('remember-me').checked;
-
-                if (rememberMe) {
-                    localStorage.setItem('rememberedEmail', email);
-                } else {
-                    localStorage.removeItem('rememberedEmail');
-                }
-
+                
                 signInWithEmailAndPassword(auth, email, password)
                     .catch(error => { 
                         console.error("Login Error Code:", error.code, error.message);
@@ -1265,7 +1205,7 @@
             if(goToSettingsBtn) goToSettingsBtn.addEventListener('click', () => showView('settings-panel'));
             
             if(viewPublicMenuBtn) viewPublicMenuBtn.addEventListener('click', () => {
-                isLiveEditing = true;
+                isLiveEditing = false;
                 applySettings(localSettings, true);
                 renderMenu(localItems, localCategories, true);
                 showView('public-menu-view');
@@ -1289,7 +1229,7 @@
                 }
 
                 try {
-                    const resizedDataUrl = await resizeImage(file, 800, 800, 0.8);
+                    const resizedDataUrl = await resizeImage(file, 800, 800, 100);
                     imageBase64.value = resizedDataUrl;
                     imagePreview.src = resizedDataUrl;
                     imagePreview.classList.remove('hidden');
@@ -1308,7 +1248,7 @@
                 logoUploadSpinner.classList.remove('hidden');
 
                 try {
-                    const resizedDataUrl = await resizeImage(file, 200, 200, 0.9);
+                    const resizedDataUrl = await resizeImage(file, 200, 200, 20);
                     
                     const sRef = storageRef(storage, `users/${userId}/images/logo.jpg`);
                     const uploadResult = await uploadString(sRef, resizedDataUrl, 'data_url');
@@ -1450,13 +1390,7 @@
 
                     clearTimeout(debounceTimer);
                     debounceTimer = setTimeout(() => {
-                        if (sanitizedPath !== localSettings.publicPath) {
-                            checkPathAvailability(sanitizedPath);
-                        } else {
-                             publicPathStatus.textContent = 'Tu URL actual. Puedes actualizarla.';
-                             publicPathStatus.className = 'text-sm text-blue-600';
-                             savePublicPathBtn.disabled = false;
-                        }
+                        checkPathAvailability(sanitizedPath);
                     }, 500);
                 });
             }
@@ -1541,3 +1475,4 @@
     </script>
 </body>
 </html>
+
